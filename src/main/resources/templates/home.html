@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>티켓 서비스 - 홈</title>
+</head>
+<body>
+<section>
+    <div class="row">
+        <!-- 공연 목록 -->
+        <div class="col-md-4">
+            <div class="event-card" onclick="location.href='/api/events/1'">
+                <img src="https://via.placeholder.com/400x200?text=공연+사진" alt="공연 사진" class="event-image">
+                <div class="event-title">공연 제목</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="event-card" onclick="location.href='/api/events/2'">
+                <img src="https://via.placeholder.com/400x200?text=공연+사진" alt="공연 사진" class="event-image">
+                <div class="event-title">공연 제목</div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="event-card" onclick="location.href='/api/events/3'">
+                <img src="https://via.placeholder.com/400x200?text=공연+사진" alt="공연 사진" class="event-image">
+                <div class="event-title">공연 제목</div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

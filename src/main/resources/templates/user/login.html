@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>로그인</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">로그인</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <form th:action="@{/api/sessions/login}" th:object="${loginRequestDto}" method="post">
+                <div class="mb-3">
+                    <label for="email" class="form-label">이메일</label>
+                    <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">비밀번호</label>
+                    <input type="password" class="form-control" id="password" th:field="*{password}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">로그인</button>
+            </form>
+            <div class="mt-3">
+                <p>계정이 없으신가요? <a href="/api/users/register">회원가입</a></p>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
