@@ -1,17 +1,17 @@
 CREATE TABLE `PerformanceSeat` (
-`performance_seat_id`	INT	NOT NULL,
-`price`	INT	NULL,
+`performance_seat_id`	LONG	NOT NULL,
+`price`	LONG	NULL,
 `status`	VARCHAR(255)	NULL,
-`version`	INT	NULL,
+`version`	LONG	NULL,
 `lock_until`	DATETIME	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`event_id`	INT	NOT NULL,
-`seat_id`	INT	NOT NULL
+`event_id`	LONG	NOT NULL,
+`seat_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `EVENT` (
-`event_id`	INT	NOT NULL,
+`event_id`	LONG	NOT NULL,
 `name`	VARCHAR(255)	NULL,
 `description`	VARCHAR(255)	NULL,
 `event_type`	VARCHAR(255)	NULL,
@@ -24,75 +24,75 @@ CREATE TABLE `EVENT` (
 );
 
 CREATE TABLE `Ticket` (
-`ticket_id`	INT	NOT NULL,
-`access_code`	INT	NULL,
+`ticket_id`	LONG	NOT NULL,
+`access_code`	LONG	NULL,
 `status`	VARCHAR(255)	NULL,
 `issued_at`	DATETIME	NULL,
 `used_at`	DATETIME	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`order_item_id`	INT	NOT NULL
+`order_item_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `UserSession` (
-`session_id`	INT	NOT NULL,
+`session_id`	LONG	NOT NULL,
 `token`	VARCHAR(255)	NULL,
 `ip_address`	VARCHAR(255)	NULL,
 `expires_at`	DATETIME	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`user_id`	INT	NOT NULL
+`user_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `SeatReservationLog` (
-`log_id`	INT	NOT NULL,
+`log_id`	LONG	NOT NULL,
 `action`	VARCHAR(255)	NULL,
 `status`	VARCHAR(255)	NULL,
 `timestamp`	DATETIME	NULL,
 `ip_address`	VARCHAR(255)	NULL,
 `error_message`	VARCHAR(255)	NULL,
-`user_id`	INT	NOT NULL,
-`performance_seat_id`	INT	NOT NULL
+`user_id`	LONG	NOT NULL,
+`performance_seat_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `WaitingQueue` (
-`queue_id`	INT	NOT NULL,
+`queue_id`	LONG	NOT NULL,
 `entry_time`	DATETIME	NULL,
-`position`	INT	NULL,
+`position`	LONG	NULL,
 `status`	VARCHAR(255)	NULL,
 `processing_started_at`	DATETIME	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`user_id`	INT	NOT NULL,
-`event_id`	INT	NOT NULL
+`user_id`	LONG	NOT NULL,
+`event_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `Seat` (
-`seat_id`	INT	NOT NULL,
+`seat_id`	LONG	NOT NULL,
 `row_name`	VARCHAR(255)	NULL,
 `seat_number`	VARCHAR(255)	NULL,
 `status`	VARCHAR(255)	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`section_id`	INT	NOT NULL
+`section_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `Order` (
-`order_id`	INT	NOT NULL,
-`total_amount`	INT	NULL,
+`order_id`	LONG	NOT NULL,
+`total_amount`	LONG	NULL,
 `payment_status`	VARCHAR(255)	NULL,
 `order_status`	VARCHAR(255)	NULL,
 `order_date`	DATETIME	NULL,
 `payment_method`	VARCHAR(255)	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`user_id`	INT	NOT NULL
+`user_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `Section` (
-`section_id`	INT	NOT NULL,
+`section_id`	LONG	NOT NULL,
 `name`	VARCHAR(255)	NULL,
-`capacity`	INT	NULL,
+`capacity`	LONG	NULL,
 `price_category`	VARCHAR(255)	NULL,
 `status`	VARCHAR(255)	NULL,
 `created_at`	DATETIME	NULL,
@@ -100,17 +100,17 @@ CREATE TABLE `Section` (
 );
 
 CREATE TABLE `OrderItem` (
-`order_item_id`	INT	NOT NULL,
-`price`	INT	NULL,
+`order_item_id`	LONG	NOT NULL,
+`price`	LONG	NULL,
 `status`	VARCHAR(255)	NULL,
 `created_at`	DATETIME	NULL,
 `updated_at`	DATETIME	NULL,
-`order_id`	INT	NOT NULL,
-`performance_seat_id`	INT	NOT NULL
+`order_id`	LONG	NOT NULL,
+`performance_seat_id`	LONG	NOT NULL
 );
 
 CREATE TABLE `Users` (
-`user_id`   INT    NOT NULL,
+`user_id`   LONG    NOT NULL,
 `username`  VARCHAR(255)   NULL,  -- 아이디 필드 추가
 `email`     VARCHAR(255)   NULL,
 `password`  VARCHAR(255)   NULL,
@@ -238,3 +238,9 @@ ALTER TABLE `OrderItem` ADD CONSTRAINT `FK_PERFORMANCESEAT_TO_ORDERITEM` FOREIGN
 ) REFERENCES `PerformanceSeat` (
 `performance_seat_id`
 );
+
+INSERT INTO EVENT (event_id, name, description, event_type, start_date, end_date, category, status, created_at, updated_at)
+VALUES
+(1, '아이유의 10주년 전국·아시아 투어 콘서트 : 이 지금 dlwlrma', '아이유의 데뷔 10주년 기념 투어 콘서트', 'CONCERT', '2025-04-22 19:30:00', '2025-04-24 19:30:00', '콘서트', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(2, '2025 IU HEREH WORLD TOUR CONCERT : THE WINNING', '2024 아이유 HEREH 월드투어 콘서트', 'CONCERT', '2025-04-15 19:30:00', '2025-05-15 19:30:00', '콘서트', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
+(3, '팬텀', '뮤지컬 〈팬텀〉 10주년 기념 공연', 'MUSICAL', '2025-05-01 19:30:00', '2025-06-15 19:30:00', '뮤지컬', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
