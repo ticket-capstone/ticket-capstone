@@ -110,15 +110,18 @@ CREATE TABLE `OrderItem` (
 );
 
 CREATE TABLE `Users` (
-`user_id`	INT	NOT NULL,
-`email`	VARCHAR(255)	NULL,
-`password`	VARCHAR(255)	NULL,
-`name`	VARCHAR(255)	NULL,
-`phone`	VARCHAR(255)	NULL,
-`status`	VARCHAR(255)	NULL,
-`created_at`	DATETIME	NULL,
-`updated_at`	DATETIME	NULL
+`user_id`   INT    NOT NULL,
+`username`  VARCHAR(255)   NULL,  -- 아이디 필드 추가
+`email`     VARCHAR(255)   NULL,
+`password`  VARCHAR(255)   NULL,
+`name`      VARCHAR(255)   NULL,
+`phone`     VARCHAR(255)   NULL,
+`status`    VARCHAR(255)   NULL,
+`created_at`    DATETIME   NULL,
+`updated_at`    DATETIME   NULL
 );
+
+ALTER TABLE `Users` ADD CONSTRAINT `UK_USERS_USERNAME` UNIQUE (`username`);
 
 ALTER TABLE `PerformanceSeat` ADD CONSTRAINT `PK_PERFORMANCESEAT` PRIMARY KEY (
 `performance_seat_id`
