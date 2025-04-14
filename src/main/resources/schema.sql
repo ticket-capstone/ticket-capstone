@@ -244,3 +244,17 @@ VALUES
 (1, '아이유의 10주년 전국·아시아 투어 콘서트 : 이 지금 dlwlrma', '아이유의 데뷔 10주년 기념 투어 콘서트', 'CONCERT', '2025-04-22 19:30:00', '2025-04-24 19:30:00', '콘서트', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
 (2, '2025 IU HEREH WORLD TOUR CONCERT : THE WINNING', '2024 아이유 HEREH 월드투어 콘서트', 'CONCERT', '2025-04-15 19:30:00', '2025-05-15 19:30:00', '콘서트', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()),
 (3, '팬텀', '뮤지컬 〈팬텀〉 10주년 기념 공연', 'MUSICAL', '2025-05-01 19:30:00', '2025-06-15 19:30:00', '뮤지컬', 'ACTIVE', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+
+INSERT INTO Users (
+    user_id, username, email, password, name, phone, status, created_at, updated_at
+) VALUES (
+             1,
+             'testuser',
+             'test@example.com',
+             '1234',
+             '테스트 사용자',
+             '010-1234-5678',
+             'ACTIVE',
+             CURRENT_TIMESTAMP,
+             CURRENT_TIMESTAMP
+         );
