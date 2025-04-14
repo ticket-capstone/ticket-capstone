@@ -7,6 +7,7 @@ import com.capstone.ticketservice.user.repository.UserSessionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -23,6 +24,7 @@ public class UserService {
 
     public Users registerUser(UserRegistrationDto userRegistrationDto) {
         Users user = Users.builder()
+                .username(userRegistrationDto.getUsername())
                 .email(userRegistrationDto.getEmail())
                 .password(userRegistrationDto.getPassword()) // 학교 프로젝트이므로 암호화 생략
                 .name(userRegistrationDto.getName())
@@ -41,4 +43,7 @@ public class UserService {
                 .orElse(false);
     }
 
+    public Optional<Users> findByUsername(String userName) {
+        return userRepository.findByUsername(userName);
+    }
 }
