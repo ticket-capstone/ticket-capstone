@@ -3,6 +3,7 @@ package com.capstone.ticketservice.seat.service;
 import com.capstone.ticketservice.seat.dto.PerformanceSeatDto;
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -69,4 +70,18 @@ public class PerformanceSeatService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public PerformanceSeatDto getPerformanceSeatBySeatIdAndEventId(Long seatId, Long eventId) {
+        PerformanceSeat performanceSeat = performanceSeatRepository.findBySeatIdAndEventId(seatId, eventId)
+                .orElseThrow(() -> new RuntimeException("해당 이벤트의 좌석을 찾을 수 없습니다."));
+        return PerformanceSeatDto.fromEntity(performanceSeat);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PerformanceSeatDto> getPerformanceSeatsBySeatId(Long seatId) {
+        List<PerformanceSeat> performanceSeats = performanceSeatRepository.findBySeatSeatId(seatId);
+        return performanceSeats.stream()
+                .map(PerformanceSeatDto::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

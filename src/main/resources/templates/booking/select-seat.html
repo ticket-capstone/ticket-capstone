@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>좌석 선택 확인</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">좌석 선택 확인</h2>
+
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 th:text="${event.name}">공연 제목</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>공연일:</strong> <span th:text="${#temporals.format(event.startDate, 'yyyy-MM-dd HH:mm')}">2025-04-15 19:30</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>장소:</strong> <span>올림픽 체조경기장</span>
+                    </div>
+                    <hr />
+                    <div class="mb-3">
+                        <strong>선택한 좌석:</strong> <span th:text="${seat.sectionName + ' 구역 ' + seat.rowName + '행 ' + seat.seatNumber + '번'}">VIP 구역 A행 1번</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>가격:</strong> <span th:text="${#numbers.formatInteger(performanceSeat.price, 0, 'COMMA') + '원'}">150,000원</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>상태:</strong>
+                        <span th:if="${performanceSeat.status == 'AVAILABLE'}" class="badge bg-success">예매가능</span>
+                        <span th:if="${performanceSeat.status == 'LOCKED'}" class="badge bg-secondary">일시잠금</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div th:if="${performanceSeat.status == 'AVAILABLE'}">
+                        <form th:action="@{/api/events/{eventId}/booking/confirm-seat(eventId=${event.eventId})}" method="post">
+                            <input type="hidden" name="performanceSeatId" th:value="${performanceSeat.performanceSeatId}" />
+                            <button type="submit" class="btn btn-primary">좌석 예약 진행</button>
+                            <a th:href="@{/api/sections/{id}/seats(id=${seat.sectionId})}" class="btn btn-secondary">다른 좌석 선택</a>
+                        </form>
+                    </div>
+                    <div th:if="${performanceSeat.status == 'LOCKED' && performanceSeat.lockUntil != null && performanceSeat.lockUntil.isAfter(T(java.time.LocalDateTime).now())}">
+                        <p class="text-warning">이 좌석은 이미 잠금 처리되었습니다. 결제를 진행하세요.</p>
+                        <a th:href="@{/api/events/{eventId}/booking/payment(eventId=${event.eventId})}" class="btn btn-primary">결제 진행</a>
+                        <a th:href="@{/api/sections/{id}/seats(id=${seat.sectionId})}" class="btn btn-secondary">다른 좌석 선택</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5>좌석 위치</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="seat-visual-container p-4 bg-light rounded">
+                        <div class="stage-area text-center p-2 mb-4 bg-secondary text-white">
+                            무대
+                        </div>
+
+                        <div class="seat-position-visualization">
+                            <div class="seat-highlight d-inline-block" th:text="${seat.rowName + seat.seatNumber}">A1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>예매 안내</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>좌석을 선택하고 예약을 진행하면 5분간 좌석이 잠금 처리됩니다.</li>
+                        <li>5분 이내에 결제를 완료하지 않으면 자동으로 취소됩니다.</li>
+                        <li>예매 완료 후에는 취소 및 변경이 제한될 수 있습니다.</li>
+                        <li>예매한 티켓은 마이페이지에서 확인 가능합니다.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .seat-visual-container {
+            min-height: 300px;
+        }
+        .stage-area {
+            border-radius: 50px;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .seat-position-visualization {
+            margin-top: 100px;
+        }
+        .seat-highlight {
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</section>
+</body>
+</html>

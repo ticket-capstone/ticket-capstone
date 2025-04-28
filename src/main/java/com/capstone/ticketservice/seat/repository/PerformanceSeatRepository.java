@@ -24,4 +24,9 @@ public interface PerformanceSeatRepository extends JpaRepository<PerformanceSeat
 
     @Query("SELECT ps FROM PerformanceSeat ps WHERE ps.lockUntil < :now AND ps.status = 'LOCKED'")
     List<PerformanceSeat> findExpiredLocks(@Param("now") LocalDateTime now);
+
+    @Query(value = "SELECT * FROM PerformanceSeat WHERE seat_id = :seatId AND event_id = :eventId", nativeQuery = true)
+    Optional<PerformanceSeat> findBySeatIdAndEventId(@Param("seatId") Long seatId, @Param("eventId") Long eventId);
+
+    List<PerformanceSeat> findBySeatSeatId(Long seatId);
 }
