@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>공연 좌석 상세 정보</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">공연 좌석 상세 정보</h2>
+
+    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 th:text="${seat.sectionName + ' 구역 - ' + seat.rowName + '행 ' + seat.seatNumber + '번'}">좌석 정보</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>좌석 ID:</strong> <span th:text="${seat.performanceSeatId}">1</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>공연:</strong> <span th:text="${seat.eventName}">콘서트 이름</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>구역:</strong> <span th:text="${seat.sectionName}">VIP</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>행:</strong> <span th:text="${seat.rowName}">A</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>좌석번호:</strong> <span th:text="${seat.seatNumber}">1</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>가격:</strong> <span th:text="${#numbers.formatInteger(seat.price, 0, 'COMMA') + '원'}">150,000원</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>상태:</strong>
+                        <span th:if="${seat.status == 'AVAILABLE'}" class="badge bg-success">예매가능</span>
+                        <span th:if="${seat.status == 'RESERVED'}" class="badge bg-warning">예약됨</span>
+                        <span th:if="${seat.status == 'SOLD'}" class="badge bg-danger">판매완료</span>
+                        <span th:if="${seat.status == 'LOCKED'}" class="badge bg-secondary">일시잠금</span>
+                    </div>
+                    <div class="mb-3" th:if="${seat.lockUntil != null}">
+                        <strong>잠금 해제 시간:</strong> <span th:text="${#temporals.format(seat.lockUntil, 'yyyy-MM-dd HH:mm:ss')}">2025-04-28 22:30:00</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a th:href="@{/api/events/{id}/seats(id=${seat.eventId})}" class="btn btn-secondary">좌석 목록으로 돌아가기</a>
+
+                    <!-- 좌석이 예매 가능할 때만 잠금 버튼 표시 -->
+                    <form th:if="${seat.status == 'AVAILABLE'}"
+                          th:action="@{/api/performance-seats/{id}/lock(id=${seat.performanceSeatId})}"
+                          method="post"
+                          class="d-inline">
+                        <button type="submit" class="btn btn-warning">좌석 잠금</button>
+                    </form>
+
+                    <!-- 좌석이 잠긴 상태이고 예약 가능할 때만 예약 버튼 표시 -->
+                    <a th:if="${seat.status == 'LOCKED' && seat.lockUntil != null && seat.lockUntil.isAfter(T(java.time.LocalDateTime).now())}"
+                       th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                       class="btn btn-primary">좌석 예약</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>좌석 위치</h5>
+                </div>
+                <div class="card-body text-center">
+                    <!-- 좌석 위치를 시각적으로 표현 -->
+                    <div class="seat-visual-container p-4 bg-light rounded">
+                        <div class="stage-area text-center p-2 mb-4 bg-secondary text-white">
+                            무대
+                        </div>
+
+                        <div class="seat-position-visualization">
+                            <!-- 이 부분에 좌석 위치를 시각적으로 표현할 수 있음 -->
+                            <div class="seat-highlight d-inline-block" th:text="${seat.rowName + seat.seatNumber}">A1</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <p>이 좌석은 <strong th:text="${seat.sectionName}">VIP</strong> 구역의 <strong th:text="${seat.rowName}">A</strong>행 <strong th:text="${seat.seatNumber}">1</strong>번에 위치해 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>좌석 예매 정보</h5>
+                </div>
+                <div class="card-body">
+                    <p>좌석 예매 방법:</p>
+                    <ol>
+                        <li>예매하려는 좌석을 선택합니다.</li>
+                        <li>"좌석 잠금" 버튼을 클릭하여 5분간 좌석을 예약합니다.</li>
+                        <li>좌석이 잠긴 상태에서 "좌석 예약" 버튼을 클릭하여 결제 절차를 진행합니다.</li>
+                        <li>결제가 완료되면 티켓이 발급됩니다.</li>
+                    </ol>
+                    <p class="text-danger">좌석 잠금 후 5분 이내에 결제를 완료하지 않으면 좌석 예약이 자동 취소됩니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .seat-visual-container {
+            min-height: 300px;
+        }
+        .stage-area {
+            border-radius: 50px;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .seat-position-visualization {
+            margin-top: 100px;
+        }
+        .seat-highlight {
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</section>
+</body>
+</html>
