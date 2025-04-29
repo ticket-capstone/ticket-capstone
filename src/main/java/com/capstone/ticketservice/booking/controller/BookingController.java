@@ -50,8 +50,7 @@ public class BookingController {
                              Model model,
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
-        // 잠시 테스트용
-        System.out.println("Debug - eventId: " + eventId + ", seatId: " + seatId);
+
         // 1. 현재 사용자 확인 (로그인 필요)
         Users user = (Users) session.getAttribute("user");
         if (user == null) {
@@ -101,11 +100,9 @@ public class BookingController {
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
             return "redirect:/api/sessions/login";
         }
-
         try {
             // 2. 좌석 잠금 처리 (5분 동안)
             PerformanceSeatDto lockedSeat = performanceSeatService.lockSeat(performanceSeatId, 300);
-
             // 3. 세션에 선택한 좌석 정보 저장 (결제 단계에서 사용)
             session.setAttribute("selectedSeat", lockedSeat);
 
