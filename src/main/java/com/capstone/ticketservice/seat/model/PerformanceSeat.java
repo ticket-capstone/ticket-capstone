@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "PerformanceSeat")
+@Table(name = "PERFORMANCESEAT")
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,7 +19,7 @@ public class PerformanceSeat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "performance_seat_id")
+    @Column(name = "PERFORMANCE_SEAT_ID")
     private Long performanceSeatId;
 
     private Integer price;
@@ -38,11 +38,11 @@ public class PerformanceSeat {
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
+    @JoinColumn(name = "EVENT_ID", nullable = false)
     private Event event;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id", nullable = false)
+    @JoinColumn(name = "SEAT_ID", nullable = false)
     private Seat seat;
 
     public boolean isLocked() {
