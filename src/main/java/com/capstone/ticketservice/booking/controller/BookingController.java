@@ -7,6 +7,9 @@ import com.capstone.ticketservice.seat.dto.SeatDto;
 import com.capstone.ticketservice.seat.service.PerformanceSeatService;
 import com.capstone.ticketservice.seat.service.SeatService;
 import com.capstone.ticketservice.user.model.Users;
+import com.capstone.ticketservice.waitingqueue.model.WaitingQueue;
+import com.capstone.ticketservice.waitingqueue.service.WaitingQueueService;
+import com.capstone.ticketservice.waitingqueue.service.WaitingQueueService;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/api")
@@ -23,22 +29,112 @@ public class BookingController {
     private final EventService eventService;
     private final SeatService seatService;
     private final PerformanceSeatService performanceSeatService;
+    private final WaitingQueueService waitingQueueService;
     //todo: 대기열 구현 필요?
 
     @Autowired
     public BookingController(EventService eventService,
                              SeatService seatService,
-                             PerformanceSeatService performanceSeatService
+                             PerformanceSeatService performanceSeatService,
+                             WaitingQueueService waitingQueueService
                              ) {
         this.eventService = eventService;
         this.seatService = seatService;
         this.performanceSeatService = performanceSeatService;
+        this.waitingQueueService =  waitingQueueService;
         //todo: 생성자 추가
     }
 
     /**
      * 예매 프로세스 시작 - 대기열 확인 후 적절한 페이지로 리다이렉트
      */
+    /**
+     * 예매 프로세스 시작 - 대기열 확인 후 분기 처리
+     */
+    @GetMapping("/events/{eventId}/booking/start")
+    public String startBooking(@PathVariable Long eventId,
+                               Model model,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+
+        // 1. 로그인 사용자 확인
+        Users user = (Users) session.getAttribute("user");
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
+            return "redirect:/api/sessions/login";
+        }
+
+        try {
+            Long userId = user.getUserId();
+
+            // 2. 대기열 정보 조회
+            Optional<WaitingQueue> optionalQueue = waitingQueueService
+                    .getByUserId(userId);
+
+            WaitingQueue queue;
+
+            //3-1 기존 대기열이 없을 경우
+            if (optionalQueue.isEmpty()) {
+                boolean isQueueEmpty = waitingQueueService
+                        .getFirstWaitingUser(eventId)
+                        .isEmpty(); // 현재 WAITING 상태인 사람이 없는지 확인
+
+                WaitingQueue.QueueStatus status = isQueueEmpty
+                        ? WaitingQueue.QueueStatus.PROCESSING
+                        : WaitingQueue.QueueStatus.WAITING;
+
+                WaitingQueue newQueue = WaitingQueue.builder()
+                        .user(user)
+                        .event(Event.builder().eventId(eventId).build())
+                        .status(status)
+                        .entryTime(LocalDateTime.now())
+                        .processingStartedAt(isQueueEmpty ? LocalDateTime.now() : null)
+                        .build();
+
+                queue = waitingQueueService.addToQueue(newQueue);
+
+                return "/waitingQueue/waitingQueue";
+            }
+
+            // 3-2. 기존 대기열 있으면 상태 확인
+            queue = optionalQueue.get();
+            WaitingQueue.QueueStatus status = queue.getStatus();
+
+            switch (status) {
+                case WAITING:
+                    long peopleBeforeMe = waitingQueueService.getRemainingWaitingCount(eventId, queue.getQueueId());
+                    long myPosition = peopleBeforeMe + 1;
+
+                    model.addAttribute("myPosition", myPosition);
+                    model.addAttribute("eventId", eventId);
+
+                    return "/waitingQueue/waitingQueue"; // 대기열 상태 HTML 렌더링
+
+                case PROCESSING:
+                    return "redirect:/api/events/" + eventId + "/sections"; // 좌석 선택 섹션으로 이동
+
+                case COMPLETED:
+                    redirectAttributes.addFlashAttribute("infoMessage", "이미 예매를 완료하셨습니다.");
+                    return "redirect:/api/events/" + eventId + "/booking/complete";
+
+                case TIMEOUT:
+                    redirectAttributes.addFlashAttribute("errorMessage", "대기 시간이 초과되었습니다. 다시 시도해주세요.");
+                    return "redirect:/api/events/" + eventId + "/booking/start";
+
+                default:
+                    redirectAttributes.addFlashAttribute("errorMessage", "알 수 없는 오류가 발생했습니다.");
+                    return "redirect:/";
+            }
+
+        } catch (Exception e) {
+            log.error("예매 시작 중 오류 발생: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "예매 시작 중 오류가 발생했습니다.");
+            return "redirect:/";
+        }
+    }
+
+
+
     //todo: 예매 프로세스 시작
 
     /**
@@ -127,5 +223,29 @@ public class BookingController {
     /**
      * 예매 완료 페이지
      */
+    @PostMapping("/events/{eventId}/booking/complete")
+    public String completeBooking(@PathVariable Long eventId,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) {
+
+        Users user = (Users) session.getAttribute("user");
+
+        try {
+            // 주문/결제 로직 생략 (예: OrderService.createOrder(...))
+
+            // 1. 현재 사용자를 COMPLETED로 재설정
+            waitingQueueService.completeWaitingStatus(user.getUserId(), eventId);
+
+            // 2. 다음 대기자 → PROCESSING으로 진입시킴
+            waitingQueueService.processFirstWaitingUser(eventId);
+
+            return "redirect:/api/events/" + eventId + "/booking/complete";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "예매 완료 처리 중 오류가 발생했습니다.");
+            return "redirect:/";
+        }
+    }
+
+
     //todo: 예매 완료페이지 (양동현 <- 할일) order 엔티티 구현이 된 후 구현예정
 }
