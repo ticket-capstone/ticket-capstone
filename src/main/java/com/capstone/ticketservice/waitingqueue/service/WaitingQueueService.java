@@ -24,6 +24,7 @@ public class WaitingQueueService {
      * 대기열 등록
      */
     public WaitingQueue addToQueue(WaitingQueue queue) {
+
         return waitingQueueRepository.save(queue);
     }
 
@@ -39,7 +40,8 @@ public class WaitingQueueService {
      */
     @Transactional
     public long getRemainingWaitingCount(Long eventId ,Long queueId) {
-        return waitingQueueRepository.countWaitingByEventIdAndQueueId(eventId, WaitingQueue.QueueStatus.WAITING,queueId);
+        return waitingQueueRepository.
+                countWaitingByEventIdAndQueueId(eventId, WaitingQueue.QueueStatus.WAITING,queueId);
     }
 
 

@@ -9,7 +9,6 @@ import com.capstone.ticketservice.seat.service.SeatService;
 import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.waitingqueue.model.WaitingQueue;
 import com.capstone.ticketservice.waitingqueue.service.WaitingQueueService;
-import com.capstone.ticketservice.waitingqueue.service.WaitingQueueService;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +72,7 @@ public class BookingController {
 
             WaitingQueue queue;
 
-            //3-1 기존 대기열이 없을 경우
+            //3-1 기존 대기열에 없을 경우
             if (optionalQueue.isEmpty()) {
                 boolean isQueueEmpty = waitingQueueService
                         .getFirstWaitingUser(eventId)
@@ -96,7 +95,7 @@ public class BookingController {
                 return "/waitingQueue/waitingQueue";
             }
 
-            // 3-2. 기존 대기열 있으면 상태 확인
+            // 3-2. 기존 대기열에 있으면 상태 확인
             queue = optionalQueue.get();
             WaitingQueue.QueueStatus status = queue.getStatus();
 

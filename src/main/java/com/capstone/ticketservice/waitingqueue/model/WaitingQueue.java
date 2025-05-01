@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
+@Table(name = "WAITINGQUEUE")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,7 +24,7 @@ public class WaitingQueue {
     @Column(name = "queue_id")
     private Long queueId;
 
-    @Enumerated(EnumType.STRING) // 데이터가 string 값으로 저장됨 , 적지 않을 경우 0,1,2로 매핑되어 저장됨 -> 순서바뀌면 매핑테이블 에러남.
+    @Enumerated(EnumType.STRING) // 데이터가 string 값으로 저장됨 , 적지 않을 경우 1,2로 매핑되어 저장됨 -> 순서바뀌면 매핑테이블 에러남.
     private QueueStatus status;
 
     private LocalDateTime entryTime;
