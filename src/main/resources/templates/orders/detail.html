@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>주문 상세 정보</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">주문 상세 정보</h2>
+
+    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">주문 정보</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>주문 번호:</strong>
+                        </div>
+                        <div class="col-md-8" th:text="${order.orderId}">12345</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>주문 일시:</strong>
+                        </div>
+                        <div class="col-md-8" th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm:ss')}">2025-04-30 15:30:45</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>예매자:</strong>
+                        </div>
+                        <div class="col-md-8" th:text="${order.userName}">홍길동</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>주문 상태:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            <span th:if="${order.orderStatus == 'COMPLETED'}" class="badge bg-success">결제완료</span>
+                            <span th:if="${order.orderStatus == 'CREATED'}" class="badge bg-warning">결제대기</span>
+                            <span th:if="${order.orderStatus == 'CANCELLED'}" class="badge bg-danger">취소됨</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>결제 상태:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            <span th:if="${order.paymentStatus == 'COMPLETED'}" class="badge bg-success">결제완료</span>
+                            <span th:if="${order.paymentStatus == 'PENDING'}" class="badge bg-warning">결제대기</span>
+                            <span th:if="${order.paymentStatus == 'CANCELLED'}" class="badge bg-danger">취소됨</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3" th:if="${order.paymentStatus == 'COMPLETED'}">
+                        <div class="col-md-4">
+                            <strong>결제 방법:</strong>
+                        </div>
+                        <div class="col-md-8" th:text="${order.paymentMethod}">신용카드</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>총 결제 금액:</strong>
+                        </div>
+                        <div class="col-md-8 fw-bold text-danger" th:text="${#numbers.formatInteger(order.totalAmount, 0, 'COMMA') + '원'}">150,000원</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">공연 & 좌석 정보</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3" th:if="${!#lists.isEmpty(order.orderItems)}" th:text="${order.orderItems[0].eventName}">아이유 콘서트</h6>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                            <tr>
+                                <th>구역</th>
+                                <th>행</th>
+                                <th>좌석번호</th>
+                                <th>가격</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="item : ${order.orderItems}">
+                                <td th:text="${item.sectionName}">VIP</td>
+                                <td th:text="${item.rowName}">A</td>
+                                <td th:text="${item.seatNumber}">1</td>
+                                <td th:text="${#numbers.formatInteger(item.price, 0, 'COMMA') + '원'}">150,000원</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a th:href="@{/api/orders/my-orders}" class="btn btn-secondary">예매 내역으로 돌아가기</a>
+
+                <!-- 결제 대기 상태일 때만 결제하기 버튼 표시 -->
+                <div th:if="${order.orderStatus == 'CREATED'}">
+                    <a th:href="@{/api/orders/{id}/payment(id=${order.orderId})}" class="btn btn-primary me-2">결제하기</a>
+                    <a th:href="@{/api/orders/{id}/cancel(id=${order.orderId})}" class="btn btn-danger"
+                       onclick="return confirm('정말 취소하시겠습니까?');">주문 취소</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">관람 안내</h5>
+                </div>
+                <div class="card-body">
+                    <h6>티켓 수령 방법</h6>
+                    <ul class="mb-4">
+                        <li>현장수령: 공연 당일 매표소에서 예매번호 및 신분증을 제시하시면 티켓을 받으실 수 있습니다.</li>
+                        <li>모바일티켓: 마이페이지에서 모바일 티켓을 확인하실 수 있습니다.</li>
+                    </ul>
+
+                    <h6>취소/환불 안내</h6>
+                    <ul>
+                        <li>공연일 7일 전까지: 티켓 금액의 100% 환불</li>
+                        <li>공연일 3~6일 전: 티켓 금액의 70% 환불</li>
+                        <li>공연일 1~2일 전: 티켓 금액의 50% 환불</li>
+                        <li>공연 당일: 환불 불가</li>
+                    </ul>
+
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <strong>고객센터</strong><br />
+                            문의사항은 고객센터(02-123-4567)로 연락주세요.<br />
+                            상담 가능 시간: 평일 10:00 ~ 18:00
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR 코드나 바코드 (결제 완료된 경우만) -->
+            <div class="card mb-4 shadow-sm" th:if="${order.paymentStatus == 'COMPLETED'}">
+                <div class="card-header">
+                    <h5 class="mb-0">입장 바코드</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="qr-code bg-light p-4 mb-3">
+                        <!-- QR 코드 이미지 대신 표시 -->
+                        <div style="width: 200px; height: 200px; margin: 0 auto; background-color: #f8f9fa; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center;">
+                            <span class="text-muted">바코드 이미지</span>
+                        </div>
+                    </div>
+                    <p class="text-muted small">
+                        이 바코드를 공연장 입구에서 스캔하시면 입장하실 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
