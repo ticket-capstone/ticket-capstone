@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>대기열 상태</title>
+    <meta http-equiv="refresh" content="10"> <!-- 10초마다 자동 새로고침 -->
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .queue-box {
+            border: 1px solid #ccc; padding: 30px; border-radius: 10px; display: inline-block;
+            background-color: #f9f9f9;
+        }
+        .info { margin-top: 15px; color: gray; }
+        .highlight { font-size: 24px; color: #2c3e50; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="queue-box">
+    <h2>예매 대기 중입니다.</h2>
+
+    <p>현재 <span class="highlight" th:text="${myPosition}">3</span>번째로 대기 중입니다.</p>
+
+    <div class="info">
+        <p>잠시만 기다려 주세요. 순서가 되면 자동으로 예매 페이지로 이동합니다.</p>
+        <p>이 페이지는 10초마다 자동 새로고침됩니다.</p>
+    </div>
+
+    <form th:action="@{/api/events/{eventId}/booking/start(eventId=${eventId})}" method="get">
+        <button type="submit">상태 수동 확인</button>
+    </form>
+</div>
+
+</body>
+</html>
