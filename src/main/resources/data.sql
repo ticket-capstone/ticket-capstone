@@ -65,9 +65,12 @@ VALUES
 INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at)
 VALUES ('donghyun', 'user01@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- 좌석 잠금 상태 설정
-UPDATE PERFORMANCESEAT
-SET STATUS = 'LOCKED',
-    LOCK_UNTIL = DATEADD('MINUTE', 5, CURRENT_TIMESTAMP())
-WHERE PERFORMANCE_SEAT_ID = 1;
+INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at)
+VALUES ('GT', 'user02@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at)
+VALUES ('JS', 'user01@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+
+
 

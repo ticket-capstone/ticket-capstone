@@ -3,6 +3,7 @@ package com.capstone.ticketservice.seat.service;
 import com.capstone.ticketservice.seat.dto.PerformanceSeatDto;
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
+import com.capstone.ticketservice.user.model.Users;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,7 +42,7 @@ public class PerformanceSeatService {
     }
 
     @Transactional
-    public PerformanceSeatDto lockSeat(Long performanceSeatId, int lockTimeInSeconds) {
+    public PerformanceSeatDto lockSeat(Long performanceSeatId, int lockTimeInSeconds, Users user) {
         // 비관적 락을 사용하여 동시성 문제 해결
         PerformanceSeat performanceSeat = performanceSeatRepository.findByIdWithPessimisticLock(performanceSeatId)
                 .orElseThrow(() -> new RuntimeException("공연 좌석을 찾을 수 없습니다."));
@@ -50,7 +51,7 @@ public class PerformanceSeatService {
             throw new RuntimeException("이미 잠긴 좌석입니다.");
         }
 
-        performanceSeat.lock(lockTimeInSeconds);
+        performanceSeat.lock(lockTimeInSeconds, user);
         PerformanceSeat savedSeat = performanceSeatRepository.save(performanceSeat);
 
         return PerformanceSeatDto.fromEntity(savedSeat);
@@ -96,5 +97,23 @@ public class PerformanceSeatService {
         return performanceSeatRepository.findFilteredSeats(
                         eventId, sectionId, status, minPrice, maxPrice, pageable)
                 .map(PerformanceSeatDto::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean validateSeatLock(Long performanceId, Long userId) {
+        return performanceSeatRepository.findById(performanceId)
+                .map(seat -> {
+                    if (!seat.isLocked()) {
+                        return false; // 좌석이 잠겨있지 않음
+                    }
+
+                    // 잠근 사용자가 없거나 현재 사용자와 일치하지 않음
+                    if (seat.getLockedByUser() ==  null || !seat.getLockedByUser().getUserId().equals(userId)) {
+                        return false;
+                    }
+
+                    return true;
+                })
+                .orElse(false);
     }
 }

@@ -24,6 +24,7 @@ public class PerformanceSeatDto {
     private String seatNumber;
     private Long sectionId;
     private String sectionName;
+    private Long lockedByUserId;
 
     public static PerformanceSeatDto fromEntity(PerformanceSeat performanceSeat) {
         return PerformanceSeatDto.builder()
@@ -38,6 +39,8 @@ public class PerformanceSeatDto {
                 .seatNumber(performanceSeat.getSeat().getSeatNumber())
                 .sectionId(performanceSeat.getSeat().getSection().getSectionId())
                 .sectionName(performanceSeat.getSeat().getSection().getName())
+                .lockedByUserId(performanceSeat.getLockedByUser() != null ?
+                        performanceSeat.getLockedByUser().getUserId() : null)
                 .build();
     }
 }
