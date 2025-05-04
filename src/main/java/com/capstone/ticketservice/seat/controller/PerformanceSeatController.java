@@ -47,14 +47,6 @@ public class PerformanceSeatController {
                 }
             }
 
-            // 검색 기록을 로깅합니다
-            System.out.println("검색 매개변수: eventId=" + eventId +
-                    ", sectionId=" + sectionId +
-                    ", status=" + status +
-                    ", minPrice=" + minPrice +
-                    ", maxPrice=" + maxPrice +
-                    ", page=" + page);
-
             // 상태가 null이거나 비어있으면 빈 문자열로 설정하여 모든 상태를 가져옵니다
             if (status == null) {
                 status = "";  // 이 빈 문자열은 위의 리포지토리 쿼리에서 처리됩니다
