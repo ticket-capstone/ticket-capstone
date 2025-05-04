@@ -56,9 +56,8 @@ CREATE TABLE `SeatReservationLog` (
 );
 
 CREATE TABLE `WaitingQueue` (
-`queue_id`	LONG	NOT NULL,
+`queue_id`	LONG	NOT NULL AUTO_INCREMENT,
 `entry_time`	DATETIME	NULL,
-`position`	LONG	NULL,
 `status`	VARCHAR(255)	NULL,
 `processing_started_at`	DATETIME	NULL,
 `created_at`	DATETIME	NULL,
