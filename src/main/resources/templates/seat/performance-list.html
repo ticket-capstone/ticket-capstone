@@ -23,29 +23,29 @@
                             <label for="sectionFilter" class="form-label">구역</label>
                             <select id="sectionFilter" name="sectionId" class="form-select">
                                 <option value="">전체 구역</option>
-                                <option value="1">A구역</option>
-                                <option value="2">B구역</option>
-                                <option value="3">C구역</option>
+                                <option value="1" th:selected="${sectionId != null && sectionId == 1}">A구역</option>
+                                <option value="2" th:selected="${sectionId != null && sectionId == 2}">B구역</option>
+                                <option value="3" th:selected="${sectionId != null && sectionId == 3}">C구역</option>
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label for="statusFilter" class="form-label">상태</label>
                             <select id="statusFilter" name="status" class="form-select">
                                 <option value="">전체 상태</option>
-                                <option value="AVAILABLE">예매가능</option>
-                                <option value="RESERVED">예약됨</option>
-                                <option value="SOLD">판매완료</option>
-                                <option value="LOCKED">일시잠금</option>
+                                <option value="AVAILABLE" th:selected="${status != null && status == 'AVAILABLE'}">예매가능</option>
+                                <option value="RESERVED" th:selected="${status != null && status == 'RESERVED'}">예약됨</option>
+                                <option value="SOLD" th:selected="${status != null && status == 'SOLD'}">판매완료</option>
+                                <option value="LOCKED" th:selected="${status != null && status == 'LOCKED'}">일시잠금</option>
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label for="priceFilter" class="form-label">가격대</label>
                             <select id="priceFilter" name="priceRange" class="form-select">
                                 <option value="">전체 가격대</option>
-                                <option value="0-50000">5만원 이하</option>
-                                <option value="50001-100000">5만원~10만원</option>
-                                <option value="100001-150000">10만원~15만원</option>
-                                <option value="150001-999999">15만원 이상</option>
+                                <option value="0-50000" th:selected="${priceRange != null && priceRange == '0-50000'}">5만원 이하</option>
+                                <option value="50001-100000" th:selected="${priceRange != null && priceRange == '50001-100000'}">5만원~10만원</option>
+                                <option value="100001-150000" th:selected="${priceRange != null && priceRange == '100001-150000'}">10만원~15만원</option>
+                                <option value="150001-999999" th:selected="${priceRange != null && priceRange == '150001-999999'}">15만원 이상</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -103,16 +103,45 @@
             </div>
 
             <!-- 페이지네이션 -->
-            <nav aria-label="Page navigation" th:if="${!#lists.isEmpty(seats)}">
+            <nav aria-label="Page navigation" th:if="${totalPages != null && totalPages > 0}">
                 <ul class="pagination justify-content-center">
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">이전</a>
+                    <!-- 이전 버튼 -->
+                    <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                        <a class="page-link"
+                           th:href="@{/api/events/{eventId}/seats(
+                   eventId=${eventId},
+                   page=${currentPage - 1},
+                   sectionId=${sectionId != null ? sectionId : ''},
+                   status=${status != null && status != '' ? status : ''},
+                   priceRange=${priceRange != null ? priceRange : ''}
+               )}"
+                           tabindex="-1">이전</a>
                     </li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#">다음</a>
+
+                    <!-- 페이지 번호들 -->
+                    <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:class="${i == currentPage ? 'page-item active' : 'page-item'}">
+                        <a class="page-link"
+                           th:href="@{/api/events/{eventId}/seats(
+                   eventId=${eventId},
+                   page=${i},
+                   sectionId=${sectionId != null ? sectionId : ''},
+                   status=${status != null && status != '' ? status : ''},
+                   priceRange=${priceRange != null ? priceRange : ''}
+               )}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+
+                    <!-- 다음 버튼 -->
+                    <li class="page-item" th:classappend="${currentPage + 1 >= totalPages ? 'disabled' : ''}">
+                        <a class="page-link"
+                           th:href="@{/api/events/{eventId}/seats(
+                   eventId=${eventId},
+                   page=${currentPage + 1},
+                   sectionId=${sectionId != null ? sectionId : ''},
+                   status=${status != null && status != '' ? status : ''},
+                   priceRange=${priceRange != null ? priceRange : ''}
+               )}">다음</a>
                     </li>
                 </ul>
             </nav>

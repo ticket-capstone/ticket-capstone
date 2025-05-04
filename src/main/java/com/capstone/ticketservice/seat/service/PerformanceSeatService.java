@@ -5,6 +5,8 @@ import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,5 +85,16 @@ public class PerformanceSeatService {
         return performanceSeats.stream()
                 .map(PerformanceSeatDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    // 필터링되고 페이지화된 결과를 위한 새 메소드
+    @Transactional(readOnly = true)
+    public Page<PerformanceSeatDto> getFilteredPerformanceSeats(
+            Long eventId, Long sectionId, String status,
+            Integer minPrice, Integer maxPrice, Pageable pageable) {
+
+        return performanceSeatRepository.findFilteredSeats(
+                        eventId, sectionId, status, minPrice, maxPrice, pageable)
+                .map(PerformanceSeatDto::fromEntity);
     }
 }
