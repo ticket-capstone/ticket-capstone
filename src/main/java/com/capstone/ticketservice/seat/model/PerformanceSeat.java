@@ -1,6 +1,7 @@
 package com.capstone.ticketservice.seat.model;
 
 import com.capstone.ticketservice.event.model.Event;
+import com.capstone.ticketservice.user.model.Users;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,18 +46,24 @@ public class PerformanceSeat {
     @JoinColumn(name = "SEAT_ID", nullable = false)
     private Seat seat;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "locked_by_user_id")
+    private Users lockedByUser;  // 좌석을 락한 사용자
+
     public boolean isLocked() {
         return lockUntil != null && lockUntil.isAfter(LocalDateTime.now());
     }
 
-    public void lock(int lockTimeInSeconds) {
+    public void lock(int lockTimeInSeconds, Users user) {
         this.lockUntil = LocalDateTime.now().plusSeconds(lockTimeInSeconds);
         this.status = "LOCKED";
+        this.lockedByUser = user;
     }
 
     public void unlock() {
         this.lockUntil = null;
         this.status = "AVAILABLE";
+        this.lockedByUser = null;
     }
 
     @PrePersist

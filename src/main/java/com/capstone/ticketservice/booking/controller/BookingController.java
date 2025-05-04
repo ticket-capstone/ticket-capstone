@@ -197,7 +197,7 @@ public class BookingController {
         }
         try {
             // 2. 좌석 잠금 처리 (5분 동안)
-            PerformanceSeatDto lockedSeat = performanceSeatService.lockSeat(performanceSeatId, 300);
+            PerformanceSeatDto lockedSeat = performanceSeatService.lockSeat(performanceSeatId, 300, user);
             // 3. 세션에 선택한 좌석 정보 저장 (결제 단계에서 사용)
             session.setAttribute("selectedSeat", lockedSeat);
 

@@ -2,6 +2,8 @@ package com.capstone.ticketservice.seat.controller;
 
 import com.capstone.ticketservice.seat.dto.PerformanceSeatDto;
 import com.capstone.ticketservice.seat.service.PerformanceSeatService;
+import com.capstone.ticketservice.user.model.Users;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -90,10 +92,18 @@ public class PerformanceSeatController {
     }
 
     @PostMapping("/performance-seats/{id}/lock")
-    public String lockSeat(@PathVariable("id") Long performanceSeatId, RedirectAttributes redirectAttributes) {
+    public String lockSeat(@PathVariable("id") Long performanceSeatId,
+                           HttpSession session,
+                           RedirectAttributes redirectAttributes) {
+        Users user = (Users) session.getAttribute("user");
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
+            return "redirect:/api/sessions/login";
+        }
+
         try {
             // 기본적으로 5분(300초) 동안 좌석 잠금
-            PerformanceSeatDto seat = performanceSeatService.lockSeat(performanceSeatId, 300);
+            PerformanceSeatDto seat = performanceSeatService.lockSeat(performanceSeatId, 300, user);
             redirectAttributes.addFlashAttribute("successMessage", "좌석이 성공적으로 잠겼습니다.");
             return "redirect:/api/performance-seats/" + performanceSeatId;
         } catch (Exception e) {
