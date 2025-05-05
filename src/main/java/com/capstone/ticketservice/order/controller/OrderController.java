@@ -121,10 +121,14 @@ public class OrderController {
             // 2. 좌석이 예약 가능한지 확인
             PerformanceSeatDto seatDto = performanceSeatService.getPerformanceSeatById(performanceSeatId);
 
-            if (!"AVAILABLE".equals(seatDto.getStatus()) && !"LOCKED".equals(seatDto.getStatus())) {
-                redirectAttributes.addFlashAttribute("errorMessage",
-                        "선택한 좌석은 현재 예약할 수 없습니다. 다른 좌석을 선택해주세요.");
-                return "redirect:/api/events/" + seatDto.getEventId() + "/sections";
+            // 2-1. 좌석이 잠긴 상태이면 현재 사용자가 잠금 소유자인지 확인
+            if ("LOCKED".equals(seatDto.getStatus())) {
+                // 잠금 소유자 확인 로직 추가
+                if (seatDto.getLockedByUserId() == null || !seatDto.getLockedByUserId().equals(user.getUserId())) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "이 좌석은 다른 사용자에 의해 잠겨 있습니다. 다른 좌석을 선택해주세요.");
+                    return "redirect:/api/events/" + seatDto.getEventId() + "/sections";
+                }
             }
 
             // 3. 좌석이 AVAILABLE 상태라면 LOCKED로 변경

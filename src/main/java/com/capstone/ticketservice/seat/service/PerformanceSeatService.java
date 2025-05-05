@@ -38,6 +38,16 @@ public class PerformanceSeatService {
     public PerformanceSeatDto getPerformanceSeatById(Long performanceSeatId) {
         PerformanceSeat performanceSeat = performanceSeatRepository.findById(performanceSeatId)
                 .orElseThrow(() -> new RuntimeException("공연 좌석을 찾을 수 없습니다."));
+
+        // 좌석 상태가 LOCKED이고 잠금 시간이 만료되었으면 자동으로 잠금 해제
+        if ("LOCKED".equals(performanceSeat.getStatus()) &&
+                performanceSeat.getLockUntil() != null &&
+                performanceSeat.getLockUntil().isBefore(LocalDateTime.now())) {
+
+            performanceSeat.unlock();
+            performanceSeat = performanceSeatRepository.save(performanceSeat);
+        }
+
         return PerformanceSeatDto.fromEntity(performanceSeat);
     }
 
@@ -58,7 +68,7 @@ public class PerformanceSeatService {
     }
 
     // 스케줄러를 사용하여 만료된 락을 자동으로 해제
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 30000    )
     @Transactional
     public void releaseExpiredLocks() {
         LocalDateTime now = LocalDateTime.now();

@@ -152,6 +152,7 @@ public class BookingController {
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
             return "redirect:/api/sessions/login";
         }
+
         try {
             // 2. 이벤트 및 좌석 정보 조회
             Event event = eventService.getEventById(eventId);
@@ -164,6 +165,16 @@ public class BookingController {
             if (!"AVAILABLE".equals(performanceSeat.getStatus()) && !"LOCKED".equals(performanceSeat.getStatus())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "이미 예약된 좌석이거나 선택할 수 없는 좌석입니다.");
                 return "redirect:/api/sections/" + seat.getSectionId() + "/seats";
+            }
+
+            // 좌석이 잠긴 상태이면 현재 사용자가 잠금 소유자인지 확인
+            if ("LOCKED".equals(performanceSeat.getStatus())) {
+                if (performanceSeat.getLockedByUserId() == null ||
+                        !performanceSeat.getLockedByUserId().equals(user.getUserId())) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "이 좌석은 다른 사용자에 의해 잠겨 있습니다. 다른 좌석을 선택해주세요.");
+                    return "redirect:/api/sections/" + seat.getSectionId() + "/seats";
+                }
             }
 
             // 5. 모델에 정보 추가
@@ -200,6 +211,20 @@ public class BookingController {
             PerformanceSeatDto lockedSeat = performanceSeatService.lockSeat(performanceSeatId, 300, user);
             // 3. 세션에 선택한 좌석 정보 저장 (결제 단계에서 사용)
             session.setAttribute("selectedSeat", lockedSeat);
+
+            // 좌석 상태 확인
+            PerformanceSeatDto seatDto = performanceSeatService.getPerformanceSeatById(performanceSeatId);
+
+            // 좌석이 이미 잠긴 상태이면 현재 사용자가 잠금 소유자인지 확인
+            if ("LOCKED".equals(seatDto.getStatus())) {
+                // 잠금 소유자 확인
+                if (seatDto.getLockedByUserId() == null || !seatDto.getLockedByUserId().equals(user.getUserId())) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "이 좌석은 다른 사용자에 의해 잠겨 있습니다. 다른 좌석을 선택해주세요.");
+                    return "redirect:/api/events/" + eventId + "/sections";
+                }
+            }
+
 
             // 4. 결제 페이지로 이동
             return "redirect:/api/orders/create/" + performanceSeatId;
