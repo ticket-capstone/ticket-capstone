@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>주문 생성</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">주문 생성</h2>
+
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>좌석 정보 확인</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>공연:</strong> <span th:text="${seat.eventName}">콘서트 이름</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>좌석 위치:</strong> <span th:text="${seat.sectionName + ' 구역 ' + seat.rowName + '행 ' + seat.seatNumber + '번'}">VIP 구역 A행 1번</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>가격:</strong> <span th:text="${#numbers.formatInteger(seat.price, 0, 'COMMA') + '원'}">150,000원</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>상태:</strong>
+                        <span th:if="${seat.status == 'AVAILABLE'}" class="badge bg-success">예매가능</span>
+                        <span th:if="${seat.status == 'LOCKED'}" class="badge bg-secondary">일시잠금</span>
+                    </div>
+
+                    <hr />
+
+                    <form action="/api/orders/create" method="post">
+                        <input type="hidden" name="performanceSeatId" th:value="${seat.performanceSeatId}" />
+
+                        <div class="mb-3">
+                            <h5>예약자 정보</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">이름</label>
+                                    <input type="text" class="form-control" th:value="${user.name}" readonly />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">연락처</label>
+                                    <input type="text" class="form-control" th:value="${user.phone}" readonly />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    예매 약관에 동의합니다. (취소 수수료, 환불 정책 등)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">주문 생성하기</button>
+                            <a th:href="@{/api/performance-seats/{id}(id=${seat.performanceSeatId})}" class="btn btn-secondary">돌아가기</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>예매 안내</h5>
+                </div>
+                <div class="card-body">
+                    <h6>유의사항</h6>
+                    <ul>
+                        <li>주문 생성 후 5분 이내에 결제를 완료해야 합니다.</li>
+                        <li>예매 완료 후 관람일 1일 전까지 환불 가능합니다.</li>
+                        <li>환불 시 예매 수수료는 환불되지 않습니다.</li>
+                        <li>관람일 1일 전 17시 이후 취소 시 티켓금액의 50%가 환불됩니다.</li>
+                        <li>관람 당일에는 환불이 불가능합니다.</li>
+                    </ul>
+
+                    <h6>결제 수단</h6>
+                    <ul>
+                        <li>신용카드</li>
+                        <li>실시간 계좌이체</li>
+                        <li>가상계좌</li>
+                        <li>휴대폰 결제</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

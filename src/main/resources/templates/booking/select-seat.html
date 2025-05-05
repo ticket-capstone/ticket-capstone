@@ -45,7 +45,7 @@
                     </div>
                     <div th:if="${performanceSeat.status == 'LOCKED' && performanceSeat.lockUntil != null && performanceSeat.lockUntil.isAfter(T(java.time.LocalDateTime).now())}">
                         <p class="text-warning">이 좌석은 이미 잠금 처리되었습니다. 결제를 진행하세요.</p>
-                        <a th:href="@{/api/events/{eventId}/booking/payment(eventId=${event.eventId})}" class="btn btn-primary">결제 진행</a>
+                        <a th:href="@{/api/orders/create/{performanceSeatId}(performanceSeatId=${performanceSeat.performanceSeatId})}" class="btn btn-primary">결제 진행</a>
                         <a th:href="@{/api/sections/{id}/seats(id=${seat.sectionId})}" class="btn btn-secondary">다른 좌석 선택</a>
                     </div>
                 </div>

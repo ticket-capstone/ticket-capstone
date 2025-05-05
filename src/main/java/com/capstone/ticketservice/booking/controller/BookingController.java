@@ -202,7 +202,7 @@ public class BookingController {
             session.setAttribute("selectedSeat", lockedSeat);
 
             // 4. 결제 페이지로 이동
-            return "redirect:/api/events/" + eventId + "/booking/payment";
+            return "redirect:/api/orders/create/" + performanceSeatId;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "좌석 잠금 중 오류가 발생했습니다: " + e.getMessage());
             return "redirect:/api/events/" + eventId + "/booking/select-seat?seatId=" + performanceSeatId;

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>결제 진행</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">결제 진행</h2>
+
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>주문 정보</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>주문 번호:</strong> <span th:text="${order.orderId}">12345</span>
+                    </div>
+                    <!-- 공연명은 첫 번째 주문 항목의 eventName을 사용 -->
+                    <div class="mb-3" th:if="${!#lists.isEmpty(order.orderItems)}">
+                        <strong>공연명:</strong> <span th:text="${order.orderItems[0].eventName}">공연 정보</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>좌석 정보:</strong>
+                        <ul class="list-group mt-2">
+                            <li class="list-group-item" th:each="item : ${order.orderItems}" th:if="${item != null}">
+                                <!-- OrderItemDto의 필드만 사용 -->
+                                <span th:text="${item.sectionName + ' 구역 ' + item.rowName + '행 ' + item.seatNumber + '번'}">
+                                    VIP 구역 A행 1번
+                                </span>
+                                <span class="float-end" th:text="${#numbers.formatInteger(item.price, 0, 'COMMA') + '원'}">
+                                    150,000원
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <strong>총 결제 금액:</strong> <span th:text="${#numbers.formatInteger(order.totalAmount, 0, 'COMMA') + '원'}" class="text-danger fw-bold">150,000원</span>
+                    </div>
+
+                    <hr />
+
+                    <form th:action="@{/api/orders/{orderId}/payment(orderId=${order.orderId})}" method="post">
+                        <div class="mb-4">
+                            <h5>결제 수단 선택</h5>
+                            <div class="mt-3">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="cardPayment" value="CARD" checked>
+                                    <label class="form-check-label" for="cardPayment">
+                                        신용카드 결제
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="bankTransfer" value="BANK_TRANSFER">
+                                    <label class="form-check-label" for="bankTransfer">
+                                        실시간 계좌이체
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="virtualAccount" value="VIRTUAL_ACCOUNT">
+                                    <label class="form-check-label" for="virtualAccount">
+                                        가상계좌 입금
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="mobilePayment" value="MOBILE">
+                                    <label class="form-check-label" for="mobilePayment">
+                                        휴대폰 결제
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="cardDetails" class="mb-4">
+                            <h6>카드 정보 입력</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">카드 번호</label>
+                                    <input type="text" class="form-control" placeholder="0000-0000-0000-0000">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">유효기간</label>
+                                    <input type="text" class="form-control" placeholder="MM/YY">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">CVC</label>
+                                    <input type="text" class="form-control" placeholder="000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">카드 소유자</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">할부 개월</label>
+                                    <select class="form-select">
+                                        <option value="0">일시불</option>
+                                        <option value="2">2개월</option>
+                                        <option value="3">3개월</option>
+                                        <option value="6">6개월</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">* 실제 결제는 이루어지지 않습니다. 학습용 사이트입니다.</small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">위 주문 내용을 확인하였으며, 결제에 동의합니다.</label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">결제하기</button>
+                            <a th:href="@{/api/orders/{orderId}/cancel(orderId=${order.orderId})}" class="btn btn-outline-danger">주문 취소</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>결제 안내</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>주의!</strong> 결제 완료 후 티켓 취소 및 환불 규정을 확인하세요.
+                    </div>
+
+                    <h6>환불 안내</h6>
+                    <ul>
+                        <li>공연일 7일 전까지: 티켓 금액의 100% 환불</li>
+                        <li>공연일 3~6일 전: 티켓 금액의 70% 환불</li>
+                        <li>공연일 1~2일 전: 티켓 금액의 50% 환불</li>
+                        <li>공연 당일: 환불 불가</li>
+                    </ul>
+
+                    <h6>결제 시 유의사항</h6>
+                    <ul>
+                        <li>결제창이 닫히면 주문이 취소될 수 있습니다.</li>
+                        <li>결제 후 예매확인/취소 메뉴에서 예매내역을 확인할 수 있습니다.</li>
+                        <li>일부 카드사의 경우 결제 후 SMS 인증이 필요할 수 있습니다.</li>
+                        <li>가상계좌 선택 시 입금 기한은 주문 완료 후 24시간입니다.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 결제 방식에 따라 입력 폼 변경
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethods = document.querySelectorAll('input[name="paymentMethod"]');
+            const cardDetails = document.getElementById('cardDetails');
+
+            paymentMethods.forEach(method => {
+                method.addEventListener('change', function() {
+                    if (this.value === 'CARD') {
+                        cardDetails.style.display = 'block';
+                    } else {
+                        cardDetails.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</section>
+</body>
+</html>
