@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>내 정보</title>
+    <script>
+        function deleteMyAccount(userId) {
+            if (confirm("정말 탈퇴하시겠습니까?")) {
+                fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else if (response.ok) {
+                        alert("탈퇴가 완료되었습니다.");
+                        window.location.href = "/";
+                    } else {
+                        alert("탈퇴에 실패했습니다.");
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+
+<h2>내 정보</h2>
+
+<table border="1">
+    <tr><th>아이디</th><td th:text="${info.username}">아이디</td></tr>
+    <tr><th>이메일</th><td th:text="${info.email}">이메일</td></tr>
+    <tr><th>비밀번호</th><td th:text="${info.password}">비밀번호</td></tr>
+    <tr><th>이름</th><td th:text="${info.name}">이름</td></tr>
+    <tr><th>전화번호</th><td th:text="${info.phone}">전화번호</td></tr>
+</table>
+
+<br>
+
+<!-- 수정 페이지로 이동 -->
+<a th:href="@{'/api/users/' + ${info.userId} + '/update'}">
+    <button>정보 수정</button>
+</a>
+
+<!-- 탈퇴 -->
+<button type="button" th:onclick="'deleteMyAccount(' + ${info.userId} + ')'">
+    회원 탈퇴
+</button>
+
+<br><br>
+<a th:href="@{/}">← 홈으로 돌아가기</a>
+
+</body>
+</html>
