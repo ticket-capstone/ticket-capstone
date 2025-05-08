@@ -1,46 +1,31 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
 <head>
-    <meta charset="UTF-8">
     <title>정보 수정</title>
 </head>
 <body>
+<section>
+    <h2>회원 정보 수정</h2>
 
-<h2>회원 정보 수정</h2>
+    <form th:action="@{'/api/users/' + ${info.userId}}" method="post">
+        <input type="hidden" name="_method" value="put"/>
+        <input type="hidden" name="userId" th:value="${info.userId}" />
 
-<form th:action="@{'/api/users/' + ${info.userId}}" method="post">
-    <!-- Spring MVC에서 PUT 지원을 위한 hidden field -->
-    <input type="hidden" name="_method" value="put"/>
+        <table border="1">
+            <tr><th>아이디</th><td><input type="text" name="username" th:value="${info.username}" readonly/></td></tr>
+            <tr><th>이메일</th><td><input type="email" name="email" th:value="${info.email}" required/></td></tr>
+            <tr><th>비밀번호</th><td><input type="password" name="password" th:value="${info.password}" required/></td></tr>
+            <tr><th>이름</th><td><input type="text" name="name" th:value="${info.name}" required/></td></tr>
+            <tr><th>전화번호</th><td><input type="text" name="phone" th:value="${info.phone}" required/></td></tr>
+        </table>
 
-    <table border="1">
-        <tr>
-            <th>아이디</th>
-            <td><input type="text" name="username" th:value="${info.username}" readonly/></td>
-        </tr>
-        <tr>
-            <th>이메일</th>
-            <td><input type="email" name="email" th:value="${info.email}"/></td>
-        </tr>
-        <tr>
-            <th>비밀번호</th>
-            <td><input type="password" name="password" th:value="${info.password}"/></td>
-        </tr>
-        <tr>
-            <th>이름</th>
-            <td><input type="text" name="name" th:value="${info.name}"/></td>
-        </tr>
-        <tr>
-            <th>전화번호</th>
-            <td><input type="text" name="phone" th:value="${info.phone}"/></td>
-        </tr>
-    </table>
+        <br>
+        <button type="submit">정보 수정</button>
+    </form>
 
     <br>
-    <button type="submit">정보 수정</button>
-</form>
-
-<br>
-<a th:href="@{'/api/users/' + ${info.userId}}">뒤로가기</a>
-
+    <a th:href="@{'/api/users/' + ${info.userId}}">← 내 정보로 돌아가기</a>
+</section>
 </body>
 </html>
