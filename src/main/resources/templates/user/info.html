@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>내 정보</title>
+</head>
+<body>
 <section>
     <h2>내 정보</h2>
 
@@ -18,23 +25,26 @@
         회원 탈퇴
     </button>
 
-    <!-- ✅ JS는 여기 -->
     <script type="text/javascript">
         function deleteAccount(userId) {
             if (confirm("정말 탈퇴하시겠습니까?")) {
                 fetch(`/api/users/${userId}`, {
                     method: 'DELETE'
                 }).then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else if (response.ok) {
+                    if (response.ok) {
                         alert("탈퇴가 완료되었습니다.");
                         window.location.href = "/";
                     } else {
-                        alert("탈퇴에 실패했습니다.");
+                        return response.text().then(msg => {
+                            alert("탈퇴 실패: " + msg);
+                        });
                     }
+                }).catch(error => {
+                    alert("에러 발생: " + error);
                 });
             }
         }
     </script>
 </section>
+</body>
+</html>
