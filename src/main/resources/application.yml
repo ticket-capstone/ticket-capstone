@@ -18,3 +18,7 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql  # 데이터 초기화 스크립트 추가
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true

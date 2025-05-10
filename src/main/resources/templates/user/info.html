@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>내 정보</title>
+</head>
+<body>
+<section>
+    <h2>내 정보</h2>
+
+    <table border="1">
+        <tr><th>아이디</th><td th:text="${info.username}"></td></tr>
+        <tr><th>이메일</th><td th:text="${info.email}"></td></tr>
+        <tr><th>비밀번호</th><td th:text="${info.password}"></td></tr>
+        <tr><th>이름</th><td th:text="${info.name}"></td></tr>
+        <tr><th>전화번호</th><td th:text="${info.phone}"></td></tr>
+    </table>
+
+    <br>
+
+    <a th:href="@{'/api/users/' + ${info.userId} + '/update'}" class="btn btn-primary">정보 수정</a>
+
+    <button type="button" class="btn btn-danger"
+            th:attr="onclick=|deleteAccount(${info.userId})|">
+        회원 탈퇴
+    </button>
+
+    <script type="text/javascript">
+        function deleteAccount(userId) {
+            if (confirm("정말 탈퇴하시겠습니까?")) {
+                fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        alert("탈퇴가 완료되었습니다.");
+                        window.location.href = "/";
+                    } else {
+                        return response.text().then(msg => {
+                            alert("탈퇴 실패: " + msg);
+                        });
+                    }
+                }).catch(error => {
+                    alert("에러 발생: " + error);
+                });
+            }
+        }
+    </script>
+</section>
+</body>
+</html>
