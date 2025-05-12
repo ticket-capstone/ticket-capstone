@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     // 주문 ID로 주문 아이템 목록 조회
     List<OrderItem> findByOrderOrderId(Long orderId);
+    List<OrderItem> findByPerformanceSeatPerformanceSeatId(Long performanceSeatId);
 }

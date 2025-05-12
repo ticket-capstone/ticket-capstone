@@ -67,6 +67,12 @@
                 <!-- 로그인 상태일 때 -->
                 <a th:if="${session.user != null}" th:href="@{/api/users/{id}(id=${session.user.userId})}" class="btn btn-outline-info me-2">내정보</a>
                 <a th:if="${session.user != null}" href="/api/sessions/logout" class="btn btn-outline-danger">로그아웃</a>
+
+                <!-- 관리자 페이지 버튼 -->
+                <a th:if="${session.user != null and session.user.role.name() == 'ADMIN'}"
+                   href="/admin/dashboard"
+                   class="btn btn-outline-warning me-2">관리자 페이지</a>
+
             </div>
         </div>
     </div>

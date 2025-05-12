@@ -17,11 +17,20 @@ public class Users {
     @Column(name = "user_id")
     private Long userId;
 
+    public enum Role{
+        USER, ADMIN
+    }
+    
+
     private String username;  // 아이디 필드 추가
     private String email;
     private String password;
     private String name;
     private String phone;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     private String status;
 
     @Column(name = "created_at")

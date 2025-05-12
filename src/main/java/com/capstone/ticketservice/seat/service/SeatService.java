@@ -34,4 +34,12 @@ public class SeatService {
                 .orElseThrow(() -> new RuntimeException("좌석을 찾을 수 없습니다."));
         return SeatDto.fromEntity(seat);
     }
+
+    // 구역이름,좌석번호,열이름으로 좌석정보 찾아내는 함수
+    @Transactional(readOnly = true)
+    public SeatDto getSeatByDetail(String rowName , String seatNumber ,String sectionName) {
+        Seat seat = seatRepository.findBySeatDetail(sectionName,rowName,seatNumber)
+                .orElseThrow(() -> new RuntimeException("좌석을 찾을 수 없습니다."));
+        return SeatDto.fromEntity(seat);
+    }
 }
