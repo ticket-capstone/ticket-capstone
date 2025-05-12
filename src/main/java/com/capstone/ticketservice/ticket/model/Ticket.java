@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Random;
 
 @Entity
-@Table(name = "TICKET")
+@Table(name = "ticket")
 @Data
 @Builder
 @NoArgsConstructor
@@ -41,7 +41,7 @@ public class Ticket {
     private LocalDateTime updatedAt;
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="ORDER_ITEM_ID",nullable=false)
+    @JoinColumn(name="order_item_id",nullable=false)
     private OrderItem orderItem;
 
     @PrePersist

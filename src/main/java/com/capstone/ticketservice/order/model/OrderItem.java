@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @Builder(toBuilder = true)
-@Table(name = "ORDER_ITEM")
+@Table(name = "ORDERITEM")
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ORDER_ITEM_ID")
+    @Column(name = "order_item_id")
     private Long orderItemId;
 
     private Long price;

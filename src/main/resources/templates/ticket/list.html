@@ -16,15 +16,15 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">티켓 목록</h5>
           <div>
-            <a th:href="@{/api/tickets/my-tickets(status='ISSUED')}"
+            <a th:href="@{/api/ticket/my-tickets(status='ISSUED')}"
                class="btn btn-sm" th:classappend="${status == 'ISSUED' ? 'btn-primary' : 'btn-outline-primary'}">
               유효한 티켓
             </a>
-            <a th:href="@{/api/tickets/my-tickets(status='USED')}"
+            <a th:href="@{/api/ticket/my-tickets(status='USED')}"
                class="btn btn-sm" th:classappend="${status == 'USED' ? 'btn-primary' : 'btn-outline-primary'}">
-              사용한 티켓
+              사용한 티켓n
             </a>
-            <a th:href="@{/api/tickets/my-tickets(status='CANCELLED')}"
+            <a th:href="@{/api/ticket/my-tickets(status='CANCELLED')}"
                class="btn btn-sm" th:classappend="${status == 'CANCELLED' ? 'btn-primary' : 'btn-outline-primary'}">
               취소된 티켓
             </a>
@@ -57,7 +57,7 @@
                     </div>
                   </div>
                   <div class="col-md-4 text-md-end">
-                    <a th:href="@{/api/tickets/{id}(id=${ticket.ticketId})}" class="btn btn-primary mb-2">상세보기</a>
+                    <a th:href="@{/api/ticket/{id}(id=${ticket.ticketId})}" class="btn btn-primary mb-2">상세보기</a>
 
                     <!-- 유효한 티켓이고 환불 가능한 경우에만 취소 버튼 표시 -->
                     <form th:if="${ticket.status == 'ISSUED' && ticket.isRefundable()}"
