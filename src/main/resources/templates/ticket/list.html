@@ -22,7 +22,7 @@
             </a>
             <a th:href="@{/api/ticket/my-tickets(status='USED')}"
                class="btn btn-sm" th:classappend="${status == 'USED' ? 'btn-primary' : 'btn-outline-primary'}">
-              사용한 티켓n
+              사용한 티켓
             </a>
             <a th:href="@{/api/ticket/my-tickets(status='CANCELLED')}"
                class="btn btn-sm" th:classappend="${status == 'CANCELLED' ? 'btn-primary' : 'btn-outline-primary'}">
