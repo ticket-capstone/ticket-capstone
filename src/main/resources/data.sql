@@ -62,8 +62,8 @@ VALUES
 
 
 -- 사용자 데이터 삽입
-INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at)
-VALUES ('donghyun', 'user01@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at, Role)
+VALUES ('donghyun', 'user01@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'ADMIN');
 
 INSERT INTO Users (username, email, password, name, phone, status, created_at, updated_at)
 VALUES ('GT', 'user02@example.com', '1234', 'Alice', '010-1111-1111', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
