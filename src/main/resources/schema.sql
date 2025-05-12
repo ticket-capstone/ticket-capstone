@@ -116,6 +116,7 @@ CREATE TABLE `Users` (
 `name`      VARCHAR(255)   NULL,
 `phone`     VARCHAR(255)   NULL,
 `status`    VARCHAR(255)   NULL,
+`role`      VARCHAR(255) DEFAULT 'USER',
 `created_at`    DATETIME   NULL,
 `updated_at`    DATETIME   NULL
 );
