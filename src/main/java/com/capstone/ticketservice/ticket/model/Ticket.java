@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Random;
 
 @Entity
-@Table(name = "Ticket")
+@Table(name = "TICKET")
 @Data
 @Builder
 @NoArgsConstructor
@@ -40,8 +40,8 @@ public class Ticket {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="order_item_id", nullable=false)
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="ORDER_ITEM_ID",nullable=false)
     private OrderItem orderItem;
 
     @PrePersist
@@ -50,13 +50,6 @@ public class Ticket {
         usedAt = LocalDateTime.now();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-
-        if (accessCode == null) {
-            Random random = new Random();
-            long min = 100000000000L; // 12자리 최소값
-            long max = 999999999999L; // 12자리 최대값
-            accessCode = min + ((long) (random.nextDouble() * (max - min)));
-        }
     }
 
     @PreUpdate

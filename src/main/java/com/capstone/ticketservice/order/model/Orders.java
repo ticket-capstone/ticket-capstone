@@ -1,16 +1,11 @@
 package com.capstone.ticketservice.order.model;
 
 import com.capstone.ticketservice.user.model.Users;
-import jakarta.persistence.Entity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
 
 @Entity
 @Data
@@ -49,9 +44,6 @@ public class Orders {
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -64,32 +56,4 @@ public class Orders {
         updatedAt = LocalDateTime.now();
     }
 
-    // 주문 항목 추가 헬퍼 메서드 - 양방향 관계 설정 개선
-    public void addOrderItem(OrderItem orderItem) {
-        orderItems.add(orderItem);
-        orderItem.setOrder(this);
-    }
-
-    // 주문 항목 제거 헬퍼 메서드
-    public void removeOrderItem(OrderItem orderItem) {
-        orderItems.remove(orderItem);
-        orderItem.setOrder(null);
-    }
-
-    public void setOrderItems(List<OrderItem> orderItems) {
-        // 기존 목록이 null이면 생성
-        if (this.orderItems == null) {
-            this.orderItems = new ArrayList<>();
-        } else {
-            // 기존 목록 초기화
-            this.orderItems.clear();
-        }
-
-        // 새 목록 추가 및 양방향 관계 설정
-        if (orderItems != null) {
-            for (OrderItem item : orderItems) {
-                this.addOrderItem(item);
-            }
-        }
-    }
 }

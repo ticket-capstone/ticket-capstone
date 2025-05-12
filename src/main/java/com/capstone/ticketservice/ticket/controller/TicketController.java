@@ -174,41 +174,4 @@ public class TicketController {
         }
     }
 
-
-    /**
-     * 티켓 발급을 위한 API 엔드포인트 (관리자 또는 시스템용) 추가
-     */
-    @PostMapping("/issue/{orderItemId}")
-    @ResponseBody
-    public ResponseEntity<TicketResponseDto> issueTicket(
-            @PathVariable Long orderItemId,
-            HttpSession session) {
-
-        // 로그인 및 권한 확인 (실제 구현에서는 관리자 권한 확인 추가 필요)
-        Users user = (Users) session.getAttribute("user");
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        try {
-            // 티켓 발급
-            TicketDto ticketDto = ticketService.issueTicket(orderItemId);
-
-            // 응답 DTO 생성
-            TicketResponseDto response = TicketResponseDto.fromTicketDto(ticketDto);
-            response.setSuccess(true);
-            response.setMessage("티켓이 성공적으로 발급되었습니다.");
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("티켓 발급 중 오류 발생", e);
-
-            TicketResponseDto errorResponse = new TicketResponseDto();
-            errorResponse.setSuccess(false);
-            errorResponse.setMessage("티켓 발급 중 오류가 발생했습니다: " + e.getMessage());
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
 }

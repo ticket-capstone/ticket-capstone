@@ -16,32 +16,6 @@ import java.util.Optional;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     /**
-     * 사용자 ID로 티켓을 조회합니다.
-     * @param userId 조회할 사용자의 ID
-     * @return 사용자가 소유한 티켓 목록
-     */
-    @Query("SELECT t FROM Ticket t " +
-            "JOIN t.orderItem oi " +
-            "JOIN oi.order o " +
-            "WHERE o.user.userId = :userId " +
-            "ORDER BY t.issuedAt DESC")
-    List<Ticket> findByUserId(@Param("userId") Long userId);
-
-    /**
-     * 사용자 ID와 상태로 티켓을 조회합니다.
-     * @param userId 조회할 사용자의 ID
-     * @param status 티켓 상태 (ISSUED, USED, CANCELLED 등)
-     * @return 조건에 맞는 티켓 목록
-     */
-    @Query("SELECT t FROM Ticket t " +
-            "JOIN t.orderItem oi " +
-            "JOIN oi.order o " +
-            "WHERE o.user.userId = :userId " +
-            "AND t.status = :status " +
-            "ORDER BY t.issuedAt DESC")
-    List<Ticket> findByUserIdAndStatus(@Param("userId") Long userId, @Param("status") String status);
-
-    /**
      * 사용자 ID와 상태로 티켓을 페이지네이션하여 조회합니다.
      * @param userId 조회할 사용자의 ID
      * @param status 티켓 상태 (ISSUED, USED, CANCELLED 등)
@@ -71,20 +45,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      * @return 해당하는 티켓 (존재하지 않으면 빈 Optional)
      */
     Optional<Ticket> findByOrderItemOrderItemId(Long orderItemId);
-    boolean existsByOrderItemOrderItemId(Long orderItemId);
-
-    /**
-     * 이벤트 ID와 상태로 티켓을 조회합니다.
-     * @param eventId 이벤트 ID
-     * @param status 티켓 상태
-     * @return 조건에 맞는 티켓 목록
-     */
-    @Query("SELECT t FROM Ticket t " +
-            "JOIN t.orderItem oi " +
-            "JOIN oi.performanceSeat ps " +
-            "WHERE ps.event.eventId = :eventId " +
-            "AND t.status = :status")
-    List<Ticket> findByEventIdAndStatus(@Param("eventId") Long eventId, @Param("status") String status);
 
     /**
      * 사용되지 않은 유효한 티켓 수를 계산합니다.

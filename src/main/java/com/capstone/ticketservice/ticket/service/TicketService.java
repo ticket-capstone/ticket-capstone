@@ -6,16 +6,21 @@ import com.capstone.ticketservice.ticket.dto.TicketDto;
 import com.capstone.ticketservice.ticket.dto.TicketResponseDto;
 import com.capstone.ticketservice.ticket.model.Ticket;
 import com.capstone.ticketservice.ticket.repository.TicketRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -27,11 +32,13 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final OrderItemRepository orderItemRepository;
     private final Random random = new Random();
+    private final EntityManager entityManager;
 
     @Autowired
-    public TicketService(TicketRepository ticketRepository, OrderItemRepository orderItemRepository) {
+    public TicketService(TicketRepository ticketRepository, OrderItemRepository orderItemRepository, EntityManager entityManager) {
         this.ticketRepository = ticketRepository;
         this.orderItemRepository = orderItemRepository;
+        this.entityManager = entityManager;
     }
 
     /**
@@ -39,9 +46,9 @@ public class TicketService {
      * @param orderItemId 주문 항목 ID
      * @return 발급된 티켓의 DTO
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TicketDto issueTicket(Long orderItemId) {
-        log.info("티켓 발급 시작: orderItemId={}", orderItemId);
+        log.info("티켓 발급 시작 (새 트랜잭션): orderItemId={}", orderItemId);
 
         // 이미 티켓이 발급되었는지 확인
         Optional<Ticket> existingTicket = ticketRepository.findByOrderItemOrderItemId(orderItemId);
@@ -50,23 +57,45 @@ public class TicketService {
             return convertToDto(existingTicket.get());
         }
 
-        // 주문 항목 조회
-        OrderItem orderItem = orderItemRepository.findById(orderItemId)
-                .orElseThrow(() -> new EntityNotFoundException("주문 항목을 찾을 수 없습니다: " + orderItemId));
 
-        // 주문 항목의 상태 확인
-        if (!"COMPLETED".equals(orderItem.getStatus())) {
-            throw new IllegalStateException("결제가 완료되지 않은 주문 항목입니다: " + orderItemId);
+        // EntityManager를 통해 직접 OrderItem 로드 - 캐시 미사용
+        OrderItem orderItem = entityManager.find(OrderItem.class, orderItemId);
+        if (orderItem == null) {
+            // 직접 SQL 쿼리로 확인
+            TypedQuery<OrderItem> query = entityManager.createQuery(
+                    "SELECT o FROM OrderItem o WHERE o.orderItemId = :id", OrderItem.class);
+            query.setParameter("id", orderItemId);
+
+            List<OrderItem> results = query.getResultList();
+            if (results.isEmpty()) {
+                log.error("OrderItem을 찾을 수 없습니다: {}", orderItemId);
+                throw new EntityNotFoundException("주문 항목을 찾을 수 없습니다: " + orderItemId);
+            }
+
+            orderItem = results.get(0);
+            log.info("네이티브 쿼리로 OrderItem 로드: id={}, status={}",
+                    orderItem.getOrderItemId(), orderItem.getStatus());
+        } else {
+            log.info("EntityManager로 OrderItem 로드: id={}, status={}",
+                    orderItem.getOrderItemId(), orderItem.getStatus());
         }
 
         // 티켓 생성
         Ticket ticket = new Ticket();
         ticket.setOrderItem(orderItem);
         ticket.setAccessCode(generateNumericAccessCode());
-        ticket.setStatus("ISSUED"); // 발급됨
+        ticket.setStatus("ISSUED");
         ticket.setIssuedAt(LocalDateTime.now());
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setUpdatedAt(LocalDateTime.now());
+
+        // 저장 전에 연관관계 유효성 확인
+        if (ticket.getOrderItem() == null || ticket.getOrderItem().getOrderItemId() == null) {
+            log.error("티켓의 OrderItem 연관관계가 없습니다");
+            throw new IllegalStateException("티켓에 OrderItem이 연결되어 있지 않습니다");
+        }
+
+        log.info("티켓 저장 시도: orderItemId={}", ticket.getOrderItem().getOrderItemId());
 
         // 티켓 저장
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -86,10 +115,32 @@ public class TicketService {
 
         // 주문에 속한 모든 주문 항목 조회
         List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
+        log.info("조회된 주문 항목 수: {}", orderItems.size());
+
+        // 각 주문 항목의 ID 로깅
+        orderItems.forEach(item -> {
+            log.info("주문 항목 ID: {}, 상태: {}", item.getOrderItemId(), item.getStatus());
+        });
+
+        // 각 주문 항목에 대해 티켓 발급 전 데이터베이스에 존재하는지 확인
+        if (!orderItems.isEmpty()) {
+            OrderItem firstItem = orderItems.get(0);
+            boolean exists = orderItemRepository.existsById(firstItem.getOrderItemId());
+            log.info("첫 번째 주문 항목 데이터베이스 존재 여부: {}", exists);
+        }
 
         // 각 주문 항목에 대해 티켓 발급
         return orderItems.stream()
-                .map(item -> issueTicket(item.getOrderItemId()))
+                .map(item -> {
+                    try {
+                        return issueTicket(item.getOrderItemId());
+                    } catch (Exception e) {
+                        log.error("주문 항목 {}에 대한 티켓 발급 중 오류: {}",
+                                item.getOrderItemId(), e.getMessage(), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -106,47 +157,6 @@ public class TicketService {
         return convertToDto(ticket);
     }
 
-    /**
-     * 액세스 코드로 티켓을 조회합니다.
-     * @param accessCode 액세스 코드
-     * @return 티켓 DTO
-     */
-    @Transactional(readOnly = true)
-    public TicketDto getTicketByAccessCode(Long accessCode) {
-        Ticket ticket = ticketRepository.findByAccessCode(accessCode)
-                .orElseThrow(() -> new EntityNotFoundException("액세스 코드로 티켓을 찾을 수 없습니다: " + accessCode));
-
-        return convertToDto(ticket);
-    }
-
-    /**
-     * 사용자 ID로 티켓 목록을 조회합니다.
-     * @param userId 사용자 ID
-     * @return 티켓 DTO 목록
-     */
-    @Transactional(readOnly = true)
-    public List<TicketDto> getTicketsByUserId(Long userId) {
-        List<Ticket> tickets = ticketRepository.findByUserId(userId);
-
-        return tickets.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 사용자 ID와 상태로 티켓 목록을 조회합니다.
-     * @param userId 사용자 ID
-     * @param status 티켓 상태
-     * @return 티켓 DTO 목록
-     */
-    @Transactional(readOnly = true)
-    public List<TicketDto> getTicketsByUserIdAndStatus(Long userId, String status) {
-        List<Ticket> tickets = ticketRepository.findByUserIdAndStatus(userId, status);
-
-        return tickets.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
 
     /**
      * 사용자 ID와 상태로 티켓 목록을 페이지네이션하여 조회합니다.
@@ -162,36 +172,6 @@ public class TicketService {
         return ticketPage.map(this::convertToDto);
     }
 
-    /**
-     * 티켓을 사용 처리합니다.
-     * @param ticketId 티켓 ID
-     * @return 업데이트된 티켓 DTO
-     */
-    @Transactional
-    public TicketDto useTicket(Long ticketId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new EntityNotFoundException("티켓을 찾을 수 없습니다: " + ticketId));
-
-        // 이미 사용된 티켓인지 확인
-        if ("USED".equals(ticket.getStatus())) {
-            throw new IllegalStateException("이미 사용된 티켓입니다: " + ticketId);
-        }
-
-        // 취소된 티켓인지 확인
-        if ("CANCELLED".equals(ticket.getStatus())) {
-            throw new IllegalStateException("취소된 티켓입니다: " + ticketId);
-        }
-
-        // 티켓 사용 처리
-        ticket.setStatus("USED");
-        ticket.setUsedAt(LocalDateTime.now());
-        ticket.setUpdatedAt(LocalDateTime.now());
-
-        Ticket updatedTicket = ticketRepository.save(ticket);
-        log.info("티켓이 사용 처리되었습니다: ticketId={}", updatedTicket.getTicketId());
-
-        return convertToDto(updatedTicket);
-    }
 
     /**
      * 티켓을 취소합니다.
@@ -223,16 +203,7 @@ public class TicketService {
         return convertToDto(updatedTicket);
     }
 
-    /**
-     * 특정 이벤트에 대한 유효한 티켓 수를 조회합니다.
-     * @param eventId 이벤트 ID
-     * @return 유효한 티켓 수
-     */
-    @Transactional(readOnly = true)
-    public long countValidTicketsByEventId(Long eventId) {
-        List<Ticket> validTickets = ticketRepository.findByEventIdAndStatus(eventId, "ISSUED");
-        return validTickets.size();
-    }
+
 
     /**
      * 사용자가 보유한 유효한 티켓 수를 조회합니다.

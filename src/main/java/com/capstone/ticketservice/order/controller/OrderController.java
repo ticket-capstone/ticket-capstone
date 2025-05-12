@@ -3,18 +3,16 @@ package com.capstone.ticketservice.order.controller;
 import com.capstone.ticketservice.event.model.Event;
 import com.capstone.ticketservice.event.service.EventService;
 import com.capstone.ticketservice.order.dto.OrderDto;
-import com.capstone.ticketservice.order.dto.OrderItemDto;
 import com.capstone.ticketservice.order.model.OrderItem;
-import com.capstone.ticketservice.order.model.Orders;
 import com.capstone.ticketservice.order.repository.OrderItemRepository;
-import com.capstone.ticketservice.order.repository.OrderRepository;
 import com.capstone.ticketservice.order.service.OrderService;
 import com.capstone.ticketservice.seat.dto.PerformanceSeatDto;
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
 import com.capstone.ticketservice.seat.service.PerformanceSeatService;
+import com.capstone.ticketservice.ticket.dto.TicketDto;
+import com.capstone.ticketservice.ticket.service.TicketService;
 import com.capstone.ticketservice.user.model.Users;
-import com.capstone.ticketservice.user.repository.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/api/orders")
@@ -34,27 +34,23 @@ public class OrderController {
     private final PerformanceSeatService performanceSeatService;
     private final PerformanceSeatRepository performanceSeatRepository;
     private final EventService eventService;
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final OrderService orderService;
-    private final UserRepository userRepository;
+    private final TicketService ticketService;
+    private final OrderItemRepository orderItemRepository;
 
     @Autowired
     public OrderController(
             PerformanceSeatService performanceSeatService,
             PerformanceSeatRepository performanceSeatRepository,
             EventService eventService,
-            OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository,
             OrderService orderService,
-            UserRepository userRepository) {
+            TicketService ticketService, OrderItemRepository orderItemRepository) {
         this.performanceSeatService = performanceSeatService;
         this.performanceSeatRepository = performanceSeatRepository;
         this.eventService = eventService;
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
         this.orderService = orderService;
-        this.userRepository = userRepository;
+        this.ticketService = ticketService;
+        this.orderItemRepository = orderItemRepository;
     }
 
     /**
@@ -147,7 +143,7 @@ public class OrderController {
             // 4. 주문 생성 (OrderService 사용)
             try {
                 OrderDto orderDto = orderService.createOrder(user.getUserId(), performanceSeatId);
-                if (orderDto == null) {
+                if (orderDto == null ) {
                     throw new RuntimeException("주문 생성에 실패했습니다.");
                 }
 
@@ -221,12 +217,11 @@ public class OrderController {
      * 결제 처리
      */
     @PostMapping("/{orderId}/payment")
-    @Transactional
     public String processPayment(@PathVariable Long orderId,
                                  @RequestParam String paymentMethod,
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
-        // 1. 로그인 확인
+        // 로그인 확인 코드 (기존과 동일)
         Users user = (Users) session.getAttribute("user");
         if (user == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
@@ -234,26 +229,64 @@ public class OrderController {
         }
 
         try {
-            // 2. OrderService를 통해 결제 처리
-            OrderDto updatedOrder = orderService.completePayment(orderId, paymentMethod);
+            // 1. 결제 처리
+            OrderDto orderDto = orderService.completePayment(orderId, paymentMethod);
 
-            // 3. 주문한 사용자와 현재 로그인한 사용자가 동일한지 확인
-            if (!updatedOrder.getUserId().equals(user.getUserId())) {
-                redirectAttributes.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-                return "redirect:/";
+            // 1.5. 트랜잭션이 완료되도록 잠시 대기
+            try {
+                Thread.sleep(500); // 500ms 대기
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
 
-            // 4. 세션에서 선택한 좌석 정보 제거
+            // 2. 티켓 발급 시도 (별도 트랜잭션이므로 예외 처리)
+            try {
+                // 실제 OrderItem ID 확인
+                List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
+                log.info("결제 완료 후 OrderItem 목록: {}",
+                        orderItems.stream()
+                                .map(item -> "ID=" + item.getOrderItemId())
+                                .collect(Collectors.joining(", ")));
+
+                if (!orderItems.isEmpty()) {
+                    // OrderItem ID를 하나씩 넘겨서 티켓 발급
+                    List<TicketDto> tickets = new ArrayList<>();
+                    for (OrderItem item : orderItems) {
+                        try {
+                            // 각 티켓 발급을 개별적으로 시도하고 예외를 잡음
+                            TicketDto ticket = ticketService.issueTicket(item.getOrderItemId());
+                            tickets.add(ticket);
+                        } catch (Exception e) {
+                            log.error("개별 티켓 발급 중 오류 (계속 진행): orderItemId={}, error={}",
+                                    item.getOrderItemId(), e.getMessage());
+                        }
+                    }
+
+                    if (!tickets.isEmpty()) {
+                        log.info("티켓 발급 성공: count={}", tickets.size());
+                        redirectAttributes.addFlashAttribute("successMessage",
+                                "결제가 완료되었으며 티켓이 발급되었습니다.");
+                    } else {
+                        log.warn("티켓이 발급되지 않았습니다.");
+                        redirectAttributes.addFlashAttribute("warningMessage",
+                                "결제는 완료되었으나, 티켓 발급에 실패했습니다. 고객센터에 문의해주세요.");
+                    }
+                }
+            } catch (Exception e) {
+                log.error("티켓 발급 중 오류 (결제는 완료됨): {}", e.getMessage(), e);
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "결제는 완료되었으나, 티켓 발급 중 오류가 발생했습니다. 고객센터에 문의해주세요.");
+            }
+
+            // 3. 세션에서 선택한 좌석 정보 제거
             session.removeAttribute("selectedSeat");
 
-            // 5. 성공 메시지 설정
-            redirectAttributes.addFlashAttribute("successMessage", "결제가 성공적으로 완료되었습니다.");
-
-            // 6. 완료 페이지로 리다이렉트
+            // 4. 완료 페이지로 리다이렉트
             return "redirect:/api/orders/" + orderId + "/complete";
         } catch (Exception e) {
-            log.error("결제 처리 중 오류 발생", e);
-            redirectAttributes.addFlashAttribute("errorMessage", "결제 처리 중 오류가 발생했습니다: " + e.getMessage());
+            log.error("결제 처리 중 오류: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "결제 처리 중 오류가 발생했습니다: " + e.getMessage());
             return "redirect:/api/orders/" + orderId + "/payment";
         }
     }

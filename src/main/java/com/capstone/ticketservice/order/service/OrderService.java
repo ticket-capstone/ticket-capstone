@@ -8,24 +8,19 @@ import com.capstone.ticketservice.order.repository.OrderItemRepository;
 import com.capstone.ticketservice.order.repository.OrderRepository;
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
-import com.capstone.ticketservice.ticket.model.Ticket;
-import com.capstone.ticketservice.ticket.repository.TicketRepository;
+import com.capstone.ticketservice.ticket.dto.TicketDto;
+import com.capstone.ticketservice.ticket.service.TicketService;
 import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,35 +30,51 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final PerformanceSeatRepository performanceSeatRepository;
     private final UserRepository userRepository;
-    private final TicketRepository ticketRepository;
-    private final ApplicationEventPublisher eventPublisher;
-
-    // 주문 항목 생성 완료 이벤트 클래스
-    public static class OrderItemCreatedEvent {
-        private final Long orderItemId;
-
-        public OrderItemCreatedEvent(Long orderItemId) {
-            this.orderItemId = orderItemId;
-        }
-
-        public Long getOrderItemId() {
-            return orderItemId;
-        }
-    }
+    private final TicketService ticketService;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         PerformanceSeatRepository performanceSeatRepository,
                         UserRepository userRepository,
-                        TicketRepository ticketRepository,
-                        ApplicationEventPublisher eventPublisher) {
+                        TicketService ticketService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.performanceSeatRepository = performanceSeatRepository;
         this.userRepository = userRepository;
-        this.ticketRepository = ticketRepository;
-        this.eventPublisher = eventPublisher;
+        this.ticketService = ticketService;
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDto getOrderById(Long orderId) {
+        Orders order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
+
+        // OrderItem 목록 명시적으로 조회
+        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
+
+        // 기본 OrderDto 생성
+        OrderDto orderDto = OrderDto.fromEntity(order);
+
+        // OrderItem 정보 명시적 설정
+        if (orderItems != null && !orderItems.isEmpty()) {
+            List<OrderItemDto> orderItemDtos = orderItems.stream()
+                    .map(OrderItemDto::fromEntity)
+                    .collect(Collectors.toList());
+            orderDto.setOrderItems(orderItemDtos);
+        } else {
+            // 비어있는 리스트로 초기화 (null 방지)
+            orderDto.setOrderItems(new ArrayList<>());
+        }
+
+        return orderDto;
+    }
+
+    public List<OrderItemDto> getOrderItemsByOrderId(Long orderId) {
+        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
+        return orderItems.stream()
+                .map(OrderItemDto::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -100,179 +111,35 @@ public class OrderService {
                     .orderDate(LocalDateTime.now())
                     .build();
 
-            // 5. 주문 항목 생성 (빌더 사용)
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .performanceSeat(performanceSeat)
-                    .price(Long.valueOf(performanceSeat.getPrice()))
-                    .status("PENDING")
-                    .build();
-
-            // 주문에 주문 항목 추가
-            order.addOrderItem(orderItem);
-
             // 주문 저장
             Orders savedOrder = orderRepository.save(order);
             log.info("주문 저장 완료: orderId={}", savedOrder.getOrderId());
 
-            // DTO 반환 - fromEntity 사용
-            return OrderDto.fromEntity(savedOrder);
+            // 5. 주문 상세 생성
+            OrderItem orderItem = OrderItem.builder()
+                    .price(savedOrder.getTotalAmount())
+                    .status("CREATED")
+                    .order(savedOrder)
+                    .performanceSeat(performanceSeat)
+                    .build();
+
+            // 주문 상세 저장
+            OrderItem savedOrderItem = orderItemRepository.save(orderItem);
+            log.info("주문 상세 저장 완료: orderItemId={}", savedOrderItem.getOrderItemId());
+
+            // 6. OrderDto 생성 (orderItems 포함)
+            OrderDto orderDto = OrderDto.fromEntity(savedOrder);
+
+            // 7. OrderDto에 orderItems 설정
+            List<OrderItemDto> orderItemDtos = new ArrayList<>();
+            orderItemDtos.add(OrderItemDto.fromEntity(savedOrderItem));
+            orderDto.setOrderItems(orderItemDtos);
+
+            return orderDto;
         } catch (Exception e) {
             log.error("주문 생성 중 오류 발생: {}", e.getMessage(), e);
             throw e;
         }
-    }
-
-    /**
-     * 주문 항목 생성 완료 이벤트를 수신하여 티켓 생성 처리
-     * 이 메소드는 현재 트랜잭션이 커밋된 후에 실행됨
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handleOrderItemCreated(OrderItemCreatedEvent event) {
-        log.info("주문 항목 생성 이벤트 수신: orderItemId={}", event.getOrderItemId());
-
-        try {
-            // 티켓이 이미 존재하는지 확인
-            if (ticketRepository.existsByOrderItemOrderItemId(event.getOrderItemId())) {
-                log.info("이미 티켓이 존재합니다: orderItemId={}", event.getOrderItemId());
-                return;
-            }
-
-            // 주문 항목 조회 - 새 트랜잭션이므로 데이터베이스에서 다시 조회
-            OrderItem orderItem = orderItemRepository.findById(event.getOrderItemId())
-                    .orElseThrow(() -> new EntityNotFoundException("주문 항목을 찾을 수 없습니다: " + event.getOrderItemId()));
-
-            // 티켓 생성
-            Ticket ticket = new Ticket();
-            ticket.setOrderItem(orderItem);
-            ticket.setAccessCode(generateAccessCode());
-            ticket.setStatus("ISSUED");
-            ticket.setIssuedAt(LocalDateTime.now());
-            ticket.setCreatedAt(LocalDateTime.now());
-            ticket.setUpdatedAt(LocalDateTime.now());
-
-            Ticket savedTicket = ticketRepository.save(ticket);
-            log.info("티켓 생성 및 저장 완료: ticketId={}", savedTicket.getTicketId());
-        } catch (Exception e) {
-            log.error("티켓 생성 중 오류 발생: {}", e.getMessage(), e);
-            // 이벤트 처리 실패는 상위 트랜잭션에 영향을 주지 않음
-        }
-    }
-
-    // 랜덤 액세스 코드 생성 (12자리)
-    private Long generateAccessCode() {
-        Random random = new Random();
-        long min = 100000000000L; // 12자리 최소값
-        long max = 999999999999L; // 12자리 최대값
-        return min + ((long)(random.nextDouble() * (max - min)));
-    }
-
-    @Transactional(readOnly = true)
-    public OrderDto getOrderById(Long orderId) {
-        Orders order = orderRepository.findById(orderId)
-                .orElseThrow(()-> new EntityNotFoundException("주문을 찾을 수 없습니다."));
-
-        // 지연 로딩된 관계 명시적 초기화
-        Hibernate.initialize(order.getOrderItems());
-        for (OrderItem item : order.getOrderItems()) {
-            if (item.getPerformanceSeat() != null) {
-                Hibernate.initialize(item.getPerformanceSeat());
-                if (item.getPerformanceSeat().getSeat() != null) {
-                    Hibernate.initialize(item.getPerformanceSeat().getSeat());
-                    if (item.getPerformanceSeat().getSeat().getSection() != null) {
-                        Hibernate.initialize(item.getPerformanceSeat().getSeat().getSection());
-                    }
-                }
-                if (item.getPerformanceSeat().getEvent() != null) {
-                    Hibernate.initialize(item.getPerformanceSeat().getEvent());
-                }
-            }
-        }
-
-        // 초기화된 엔티티로 DTO 생성 - fromEntity 사용
-        try {
-            return OrderDto.fromEntity(order);
-        } catch (Exception e) {
-            log.error("주문 DTO 변환 중 오류 발생: {}", e.getMessage(), e);
-            // 기본 정보만 포함된 DTO 생성 - 대체 방안
-            OrderDto fallbackDto = new OrderDto();
-            fallbackDto.setOrderId(order.getOrderId());
-            fallbackDto.setTotalAmount(order.getTotalAmount());
-            fallbackDto.setPaymentStatus(order.getPaymentStatus());
-            fallbackDto.setOrderStatus(order.getOrderStatus());
-            fallbackDto.setOrderDate(order.getOrderDate());
-            fallbackDto.setPaymentMethod(order.getPaymentMethod());
-            fallbackDto.setUserId(order.getUser().getUserId());
-            fallbackDto.setUserName(order.getUser().getName());
-
-            // 주문 항목은 안전하게 변환
-            List<OrderItemDto> items = order.getOrderItems().stream()
-                    .map(item -> {
-                        try {
-                            return OrderItemDto.fromEntity(item);
-                        } catch (Exception ex) {
-                            log.warn("주문 항목 변환 중 오류: {}", ex.getMessage());
-                            return OrderItemDto.builder()
-                                    .orderItemId(item.getOrderItemId())
-                                    .price(item.getPrice())
-                                    .status(item.getStatus())
-                                    .build();
-                        }
-                    })
-                    .collect(Collectors.toList());
-            fallbackDto.setOrderItems(items);
-
-            return fallbackDto;
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public List<OrderDto> getOrdersByUserId(Long userId) {
-        List<Orders> orders = orderRepository.findByUserUserId(userId);
-
-        return orders.stream()
-                .map(order -> {
-                    try {
-                        // 주문 항목 조회 및 초기화 (N+1 문제 방지)
-                        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(order.getOrderId());
-                        order.setOrderItems(orderItems);
-
-                        // DTO 변환
-                        return OrderDto.fromEntity(order);
-                    } catch (Exception e) {
-                        log.warn("주문 DTO 변환 중 오류: {}", e.getMessage());
-                        // 기본 정보만 포함된 DTO 생성
-                        OrderDto fallbackDto = new OrderDto();
-                        fallbackDto.setOrderId(order.getOrderId());
-                        fallbackDto.setTotalAmount(order.getTotalAmount());
-                        fallbackDto.setPaymentStatus(order.getPaymentStatus());
-                        fallbackDto.setOrderStatus(order.getOrderStatus());
-                        fallbackDto.setOrderDate(order.getOrderDate());
-                        fallbackDto.setPaymentMethod(order.getPaymentMethod());
-                        fallbackDto.setUserId(order.getUser().getUserId());
-                        fallbackDto.setUserName(order.getUser().getName());
-
-                        // 주문 항목 변환
-                        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(order.getOrderId());
-                        fallbackDto.setOrderItems(orderItems.stream()
-                                .map(item -> {
-                                    try {
-                                        return OrderItemDto.fromEntity(item);
-                                    } catch (Exception ex) {
-                                        return OrderItemDto.builder()
-                                                .orderItemId(item.getOrderItemId())
-                                                .price(item.getPrice())
-                                                .status(item.getStatus())
-                                                .build();
-                                    }
-                                })
-                                .collect(Collectors.toList()));
-
-                        return fallbackDto;
-                    }
-                })
-                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -313,16 +180,16 @@ public class OrderService {
 
                 log.info("주문 항목 및 좌석 상태 업데이트 완료: orderItemId={}, seatId={}",
                         savedItem.getOrderItemId(), seat.getPerformanceSeatId());
-
-                // 티켓이 없으면 이벤트 발행
-                if (!ticketRepository.existsByOrderItemOrderItemId(savedItem.getOrderItemId())) {
-                    eventPublisher.publishEvent(new OrderItemCreatedEvent(savedItem.getOrderItemId()));
-                    log.info("티켓 생성을 위한 이벤트 발행: orderItemId={}", savedItem.getOrderItemId());
-                }
             }
 
+            OrderDto orderDto = OrderDto.fromEntity(order);
+
+            orderDto.setOrderItems(orderItems.stream()
+                    .map(OrderItemDto::fromEntity)
+                    .collect(Collectors.toList()));
+
             // 3. 최종 주문 정보 조회 및 반환
-            return getOrderById(orderId);
+            return orderDto;
         } catch (Exception e) {
             log.error("결제 처리 중 오류 발생: {}", e.getMessage(), e);
             throw e;
@@ -367,5 +234,40 @@ public class OrderService {
             log.error("주문 취소 중 오류 발생: {}", e.getMessage(), e);
             throw e;
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderDto> getOrdersByUserId(Long userId) {
+        List<Orders> orders = orderRepository.findByUserId(userId);
+        List<OrderDto> orderDtos = new ArrayList<>();
+
+        for (Orders order : orders) {
+            // 각 주문에 대한 OrderDto 생성
+            OrderDto orderDto = OrderDto.fromEntity(order);
+
+            // 각 주문의 OrderItem을 명시적으로 조회
+            List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(order.getOrderId());
+
+            // OrderItem을 OrderItemDto로 변환하여 설정
+            List<OrderItemDto> orderItemDtos = orderItems.stream()
+                    .map(item -> {
+                        OrderItemDto itemDto = OrderItemDto.fromEntity(item);
+                        // 디버깅 로그 추가
+                        log.debug("Converting OrderItem: id={}, price={}, seatInfo={}, eventName={}",
+                                item.getOrderItemId(),
+                                item.getPrice(),
+                                (item.getPerformanceSeat() != null && item.getPerformanceSeat().getSeat() != null) ?
+                                        item.getPerformanceSeat().getSeat().getRowName() + item.getPerformanceSeat().getSeat().getSeatNumber() : "null",
+                                (item.getPerformanceSeat() != null && item.getPerformanceSeat().getEvent() != null) ?
+                                        item.getPerformanceSeat().getEvent().getName() : "null");
+                        return itemDto;
+                    })
+                    .collect(Collectors.toList());
+
+            orderDto.setOrderItems(orderItemDtos);
+            orderDtos.add(orderDto);
+        }
+
+        return orderDtos;
     }
 }
