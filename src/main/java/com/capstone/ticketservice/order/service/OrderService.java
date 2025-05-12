@@ -1,6 +1,7 @@
 package com.capstone.ticketservice.order.service;
 
 import com.capstone.ticketservice.order.dto.OrderDto;
+import com.capstone.ticketservice.order.dto.OrderItemDto;
 import com.capstone.ticketservice.order.model.OrderItem;
 import com.capstone.ticketservice.order.model.Orders;
 import com.capstone.ticketservice.order.repository.OrderItemRepository;
@@ -20,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.capstone.ticketservice.order.dto.OrderItemDto.fromEntity;
 
 @Service
 @Slf4j
@@ -114,7 +117,7 @@ public class OrderService {
             List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(savedOrder.getOrderId());
             orderDto.setOrderItems(orderItems.stream()
                     .map(item -> {
-                        return com.capstone.ticketservice.order.dto.OrderItemDto.fromEntity(item);
+                        return fromEntity(item);
                     })
                     .collect(Collectors.toList()));
 
@@ -250,5 +253,21 @@ public class OrderService {
 
             orderItemRepository.save(orderItem);
         }
+    }
+
+    //performanceSeatId로 orderItem반환하는 함수
+    public List<OrderItemDto> getOrderItemByPerformanceSeatId(Long performanceSeatId) {
+        List<OrderItem> orderItems = orderItemRepository.findByPerformanceSeatPerformanceSeatId(performanceSeatId);
+        List<OrderItemDto> orderItemDtos = new ArrayList<>();
+        OrderItemDto orderItemDto;
+
+        //orderItemDto로 반환
+        for (OrderItem orderItem : orderItems) {
+            orderItemDto = fromEntity(orderItem);
+            orderItemDtos.add(orderItemDto);
+
+        }
+
+        return orderItemDtos;
     }
 }
