@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.capstone.ticketservice.order.dto.OrderItemDto.fromEntity;
+
 @Service
 @Slf4j
 public class OrderService {
@@ -269,5 +271,21 @@ public class OrderService {
         }
 
         return orderDtos;
+    }
+
+    //performanceSeatId로 orderItem반환하는 함수
+    public List<OrderItemDto> getOrderItemByPerformanceSeatId(Long performanceSeatId) {
+        List<OrderItem> orderItems = orderItemRepository.findByPerformanceSeatPerformanceSeatId(performanceSeatId);
+        List<OrderItemDto> orderItemDtos = new ArrayList<>();
+        OrderItemDto orderItemDto;
+
+        //orderItemDto로 반환
+        for (OrderItem orderItem : orderItems) {
+            orderItemDto = fromEntity(orderItem);
+            orderItemDtos.add(orderItemDto);
+
+        }
+
+        return orderItemDtos;
     }
 }

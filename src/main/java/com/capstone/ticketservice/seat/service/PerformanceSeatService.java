@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -125,5 +126,16 @@ public class PerformanceSeatService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    //seatid로 performaceSeatDto 얻는 함수
+    @Transactional(readOnly = true)
+    public List<PerformanceSeatDto> getPerformanceSeatId(Long seatId) {
+        List<PerformanceSeat> performanceSeats = performanceSeatRepository.findBySeatSeatId(seatId);
+        List<PerformanceSeatDto> performanceSeatDtos = new ArrayList<>();
+        for(PerformanceSeat seat : performanceSeats) {
+            performanceSeatDtos.add(PerformanceSeatDto.fromEntity(seat));
+        }
+        return performanceSeatDtos;
     }
 }
