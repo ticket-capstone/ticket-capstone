@@ -1,16 +1,11 @@
 package com.capstone.ticketservice.order.model;
 
 import com.capstone.ticketservice.user.model.Users;
-import jakarta.persistence.Entity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
 
 @Entity
 @Data
@@ -49,10 +44,6 @@ public class Orders {
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
-    // orphanRemoval=false로 변경하여 고아 객체 삭제 방지
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -65,12 +56,4 @@ public class Orders {
         updatedAt = LocalDateTime.now();
     }
 
-    // 주문 항목 추가 헬퍼 메서드 - 양방향 관계 설정 주의
-    public void addOrderItem(OrderItem orderItem) {
-        if (orderItems == null) {
-            orderItems = new ArrayList<>();
-        }
-        orderItems.add(orderItem);
-        orderItem.setOrder(this);
-    }
 }

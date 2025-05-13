@@ -6,28 +6,79 @@
 </head>
 <body>
 <section>
-    <h2>내 정보</h2>
+    <h2 class="mb-4">내 정보</h2>
 
-    <table border="1">
-        <tr><th>아이디</th><td th:text="${info.username}"></td></tr>
-        <tr><th>이메일</th><td th:text="${info.email}"></td></tr>
-        <tr><th>비밀번호</th><td th:text="${info.password}"></td></tr>
-        <tr><th>이름</th><td th:text="${info.name}"></td></tr>
-        <tr><th>전화번호</th><td th:text="${info.phone}"></td></tr>
-    </table>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">회원 정보</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th style="width: 30%">아이디</th>
+                            <td th:text="${info.username}"></td>
+                        </tr>
+                        <tr>
+                            <th>이메일</th>
+                            <td th:text="${info.email}"></td>
+                        </tr>
+                        <tr>
+                            <th>비밀번호</th>
+                            <td>
+                                <span class="text-muted">••••••••</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>이름</th>
+                            <td th:text="${info.name}"></td>
+                        </tr>
+                        <tr>
+                            <th>전화번호</th>
+                            <td th:text="${info.phone}"></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a th:href="@{'/api/users/' + ${info.userId} + '/update'}" class="btn btn-primary">
+                            <i class="bi bi-pencil-square"></i> 정보 수정
+                        </a>
+                        <button type="button" class="btn btn-danger"
+                                th:attr="onclick=|deleteAccount(${info.userId})|">
+                            <i class="bi bi-person-x"></i> 회원 탈퇴
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <br>
-
-    <a th:href="@{'/api/users/' + ${info.userId} + '/update'}" class="btn btn-primary">정보 수정</a>
-
-    <button type="button" class="btn btn-danger"
-            th:attr="onclick=|deleteAccount(${info.userId})|">
-        회원 탈퇴
-    </button>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">나의 예매 활동</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a th:href="@{/api/orders/my-orders}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-ticket-perforated"></i> 나의 예매 내역
+                        </a>
+                        <a th:href="@{/api/ticket/my-tickets}" class="btn btn-outline-success btn-lg">
+                            <i class="bi bi-card-checklist"></i> 나의 티켓 목록
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> 티켓 예매하러 가기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="text/javascript">
         function deleteAccount(userId) {
-            if (confirm("정말 탈퇴하시겠습니까?")) {
+            if (confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
                 fetch(`/api/users/${userId}`, {
                     method: 'DELETE'
                 }).then(response => {

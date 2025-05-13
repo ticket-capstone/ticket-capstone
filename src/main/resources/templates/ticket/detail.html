@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
+<head>
+    <title>티켓 상세 정보</title>
+</head>
+<body>
+<section>
+    <h2 class="mb-4">티켓 상세 정보</h2>
+
+    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0" th:text="${ticket.eventName}">공연명</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h4>티켓 상태</h4>
+                        <div class="d-flex align-items-center">
+                            <div th:if="${ticket.status == 'ISSUED' && !ticket.isExpired()}" class="badge bg-success p-2 fs-6">유효한 티켓</div>
+                            <div th:if="${ticket.status == 'ISSUED' && ticket.isExpired()}" class="badge bg-warning p-2 fs-6">만료된 티켓</div>
+                            <div th:if="${ticket.status == 'USED'}" class="badge bg-secondary p-2 fs-6">사용된 티켓</div>
+                            <div th:if="${ticket.status == 'CANCELLED'}" class="badge bg-danger p-2 fs-6">취소된 티켓</div>
+
+                            <!-- 사용 날짜 표시 -->
+                            <span th:if="${ticket.status == 'USED' && ticket.usedAt != null}" class="ms-3 text-muted">
+                                <small th:text="'사용일시: ' + ${#temporals.format(ticket.usedAt, 'yyyy-MM-dd HH:mm')}"></small>
+                            </span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h4>공연 정보</h4>
+                            <p>
+                                <strong>일시:</strong> <span th:text="${ticket.getFormattedEventDate()}">2023-04-30 15:00</span><br>
+                                <strong>장소:</strong> <span th:text="${ticket.venueName}">올림픽 체조경기장</span><br>
+                                <strong>주소:</strong> <span th:text="${ticket.venueAddress}">서울특별시 송파구 올림픽로 424</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>좌석 정보</h4>
+                            <p>
+                                <strong>구역:</strong> <span th:text="${ticket.sectionName}">VIP</span><br>
+                                <strong>행:</strong> <span th:text="${ticket.rowName}">A</span><br>
+                                <strong>번호:</strong> <span th:text="${ticket.seatNumber}">1</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h4>티켓 정보</h4>
+                            <p>
+                                <strong>티켓 ID:</strong> <span th:text="${ticket.ticketId}">12345</span><br>
+                                <strong>액세스 코드:</strong> <span th:text="${ticket.accessCode}">AB123456</span><br>
+                                <strong>발급일:</strong> <span th:text="${#temporals.format(ticket.issuedAt, 'yyyy-MM-dd HH:mm')}">2023-04-15 10:30</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>가격 정보</h4>
+                            <p>
+                                <strong>티켓 가격:</strong> <span th:text="${#numbers.formatInteger(ticket.price, 0, 'COMMA') + '원'}">150,000원</span><br>
+                                <strong>환불 가능 여부:</strong>
+                                <span th:if="${ticket.isRefundable}" class="text-success">환불 가능</span>
+                                <span th:unless="${ticket.isRefundable}" class="text-danger">환불 불가</span><br>
+                                <strong>환불 정책:</strong> <span th:text="${ticket.refundPolicy}">환불 정책</span>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a th:href="@{/api/tickets/my-tickets}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> 티켓 목록으로
+                        </a>
+
+                        <!-- 유효한 티켓이고 환불 가능한 경우에만 취소 버튼 표시 -->
+                        <form th:if="${ticket.status == 'ISSUED' && ticket.isRefundable}"
+                              th:action="@{/api/tickets/{id}/cancel(id=${ticket.ticketId})}"
+                              method="post"
+                              class="d-inline">
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('정말로 티켓을 취소하시겠습니까? 환불 정책에 따라 처리됩니다.');">
+                                <i class="bi bi-x-circle"></i> 티켓 취소
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">입장 안내</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill"></i> QR코드를 공연장 입구에서 스캔하면 입장하실 수 있습니다.
+                    </div>
+
+                    <h6 class="mt-3">입장 시 유의사항</h6>
+                    <ul>
+                        <li>공연 시작 30분 전부터 입장이 가능합니다.</li>
+                        <li>공연 시작 후에는 입장이 제한될 수 있습니다.</li>
+                        <li>음식물 반입은 제한됩니다.</li>
+                        <li>공연 중 사진 촬영 및 녹화는 금지되어 있습니다.</li>
+                    </ul>
+
+                    <h6 class="mt-3">문의 연락처</h6>
+                    <p>
+                        공연 관련 문의: 02-123-4567<br>
+                        티켓 관련 문의: ticket@example.com
+                    </p>
+                </div>
+            </div>
+
+            <!-- 미니 지도 (선택 사항) -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">공연장 위치</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="bg-light p-3 mb-3" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <span class="text-muted">지도가 표시됩니다.</span>
+                    </div>
+                    <p class="text-start">
+                        <strong>주소:</strong> <span th:text="${ticket.venueAddress}">서울특별시 송파구 올림픽로 424</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

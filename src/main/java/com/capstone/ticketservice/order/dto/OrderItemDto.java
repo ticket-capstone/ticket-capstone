@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.Hibernate;
 
 @Data
 @Builder
@@ -26,24 +27,12 @@ public class OrderItemDto {
                 .orderItemId(orderItem.getOrderItemId())
                 .price(orderItem.getPrice())
                 .status(orderItem.getStatus())
-                .performanceSeatId(orderItem.getPerformanceSeat() != null ?
-                        orderItem.getPerformanceSeat().getPerformanceSeatId() : null)
-                .sectionName(orderItem.getPerformanceSeat() != null &&
-                        orderItem.getPerformanceSeat().getSeat() != null &&
-                        orderItem.getPerformanceSeat().getSeat().getSection() != null ?
-                        orderItem.getPerformanceSeat().getSeat().getSection().getName() : null)
-                .rowName(orderItem.getPerformanceSeat() != null &&
-                        orderItem.getPerformanceSeat().getSeat() != null ?
-                        orderItem.getPerformanceSeat().getSeat().getRowName() : null)
-                .seatNumber(orderItem.getPerformanceSeat() != null &&
-                        orderItem.getPerformanceSeat().getSeat() != null ?
-                        orderItem.getPerformanceSeat().getSeat().getSeatNumber() : null)
-                .eventId(orderItem.getPerformanceSeat() != null &&
-                        orderItem.getPerformanceSeat().getEvent() != null ?
-                        orderItem.getPerformanceSeat().getEvent().getEventId() : null)
-                .eventName(orderItem.getPerformanceSeat() != null &&
-                        orderItem.getPerformanceSeat().getEvent() != null ?
-                        orderItem.getPerformanceSeat().getEvent().getName() : null)
+                .performanceSeatId(orderItem.getPerformanceSeat().getPerformanceSeatId())
+                .sectionName(orderItem.getPerformanceSeat().getSeat().getSection().getName())
+                .rowName(orderItem.getPerformanceSeat().getSeat().getRowName())
+                .seatNumber(orderItem.getPerformanceSeat().getSeat().getSeatNumber())
+                .eventId(orderItem.getPerformanceSeat().getEvent().getEventId())
+                .eventName(orderItem.getPerformanceSeat().getEvent().getName())
                 .build();
     }
 }

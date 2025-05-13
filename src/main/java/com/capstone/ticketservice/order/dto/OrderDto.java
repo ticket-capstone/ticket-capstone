@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,9 +36,7 @@ public class OrderDto {
                 .paymentMethod(order.getPaymentMethod())
                 .userId(order.getUser().getUserId())
                 .userName(order.getUser().getName())
-                .orderItems(order.getOrderItems().stream()
-                        .map(OrderItemDto::fromEntity)
-                        .collect(Collectors.toList()))
+                .orderItems(new ArrayList<>())
                 .build();
     }
 }

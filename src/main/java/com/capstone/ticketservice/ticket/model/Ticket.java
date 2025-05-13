@@ -1,6 +1,6 @@
-package com.capstone.ticketservice.order.model;
+package com.capstone.ticketservice.ticket.model;
 
-import com.capstone.ticketservice.seat.model.PerformanceSeat;
+import com.capstone.ticketservice.order.model.OrderItem;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,22 +8,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Random;
 
 @Entity
+@Table(name = "ticket")
 @Data
-@Builder(toBuilder = true)
-@Table(name = "ORDERITEM")
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItem {
+public class Ticket {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_item_id")
-    private Long orderItemId;
+    @Column(name = "ticket_id")
+    private Long ticketId;
 
-    private Long price;
+    @Column(name = "access_code")
+    private Long accessCode;
+
     private String status;
+
+    @Column(name = "issued_at")
+    private LocalDateTime issuedAt;
+
+    @Column(name = "used_at")
+    private LocalDateTime usedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -31,16 +40,14 @@ public class OrderItem {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Orders order;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "performance_seat_id", nullable = false)
-    private PerformanceSeat performanceSeat;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="order_item_id",nullable=false)
+    private OrderItem orderItem;
 
     @PrePersist
     protected void onCreate() {
+        issuedAt = LocalDateTime.now();
+        usedAt = LocalDateTime.now();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
