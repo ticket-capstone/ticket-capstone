@@ -1,25 +1,19 @@
 package com.capstone.ticketservice.user.service;
 import com.capstone.ticketservice.user.dto.UserRegistrationDto;
-import com.capstone.ticketservice.user.model.UserSession;
 import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.repository.UserRepository;
-import com.capstone.ticketservice.user.repository.UserSessionRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserSessionRepository userSessionRepository;
 
-    public UserService(UserRepository userRepository, UserSessionRepository userSessionRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.userSessionRepository = userSessionRepository;
     }
 
     public Users registerUser(UserRegistrationDto userRegistrationDto) {
