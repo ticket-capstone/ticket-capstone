@@ -16,7 +16,7 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Users registerUser(UserRegistrationDto userRegistrationDto) {
+    public void registerUser(UserRegistrationDto userRegistrationDto) {
         Users user = Users.builder()
                 .username(userRegistrationDto.getUsername())
                 .email(userRegistrationDto.getEmail())
@@ -24,9 +24,10 @@ public class UserService {
                 .name(userRegistrationDto.getName())
                 .phone(userRegistrationDto.getPhone())
                 .status("ACTIVE")
+                .role(Users.Role.USER)
                 .build();
 
-        return userRepository.save(user);
+        userRepository.save(user);
     }
 
 
