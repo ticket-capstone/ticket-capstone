@@ -1,28 +1,22 @@
 package com.capstone.ticketservice.user.service;
 import com.capstone.ticketservice.user.dto.UserRegistrationDto;
-import com.capstone.ticketservice.user.model.UserSession;
 import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.repository.UserRepository;
-import com.capstone.ticketservice.user.repository.UserSessionRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserSessionRepository userSessionRepository;
 
-    public UserService(UserRepository userRepository, UserSessionRepository userSessionRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.userSessionRepository = userSessionRepository;
     }
 
-    public Users registerUser(UserRegistrationDto userRegistrationDto) {
+    public void registerUser(UserRegistrationDto userRegistrationDto) {
         Users user = Users.builder()
                 .username(userRegistrationDto.getUsername())
                 .email(userRegistrationDto.getEmail())
@@ -30,9 +24,10 @@ public class UserService {
                 .name(userRegistrationDto.getName())
                 .phone(userRegistrationDto.getPhone())
                 .status("ACTIVE")
+                .role(Users.Role.USER)
                 .build();
 
-        return userRepository.save(user);
+        userRepository.save(user);
     }
 
 

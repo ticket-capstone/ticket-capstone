@@ -1,24 +1,26 @@
 spring:
-  devtools:
-    restart:
-      enabled: false
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ticketservice?serverTimezone=UTC&characterEncoding=UTF-8
+    username: root
+    password: 1234
   jpa:
     hibernate:
-      ddl-auto: update
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql  # 데이터 초기화 스크립트 추가
+      ddl-auto: validate
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.MySQLDialect
   mvc:
     hiddenmethod:
       filter:
         enabled: true
+logging:
+  level:
+    org:
+      hibernate:
+        type:
+          descriptor:
+            sql: trace

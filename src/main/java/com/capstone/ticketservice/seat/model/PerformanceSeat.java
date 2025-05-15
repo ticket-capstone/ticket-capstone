@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class PerformanceSeat {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "PERFORMANCE_SEAT_ID")
     private Long performanceSeatId;
 

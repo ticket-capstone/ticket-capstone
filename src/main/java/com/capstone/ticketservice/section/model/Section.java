@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class Section {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "section_id")
     private Long sectionId;
 
