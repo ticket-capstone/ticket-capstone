@@ -23,8 +23,4 @@ spring:
         enabled: true
 logging:
   level:
-    org:
-      hibernate:
-        type:
-          descriptor:
-            sql: trace
+    org.springframework.cache: trace
