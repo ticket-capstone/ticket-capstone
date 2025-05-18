@@ -4,6 +4,10 @@ spring:
     url: jdbc:mysql://localhost:3306/ticketservice?serverTimezone=UTC&characterEncoding=UTF-8
     username: root
     password: 1234
+  data:
+    redis:
+      host: localhost
+      port: 6379
   jpa:
     hibernate:
       ddl-auto: validate
@@ -19,8 +23,4 @@ spring:
         enabled: true
 logging:
   level:
-    org:
-      hibernate:
-        type:
-          descriptor:
-            sql: trace
+    org.springframework.cache: trace
