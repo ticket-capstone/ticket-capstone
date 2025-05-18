@@ -1,6 +1,7 @@
 package com.capstone.ticketservice.seat.dto;
 
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -42,5 +43,10 @@ public class PerformanceSeatDto {
                 .lockedByUserId(performanceSeat.getLockedByUser() != null ?
                         performanceSeat.getLockedByUser().getUserId() : null)
                 .build();
+    }
+
+    @JsonIgnore  // JSON 직렬화에서 제외
+    public boolean isEmpty() {
+        return "AVAILABLE".equals(this.status);
     }
 }
