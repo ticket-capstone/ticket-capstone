@@ -69,7 +69,7 @@
                 <a th:if="${session.user != null}" href="/api/sessions/logout" class="btn btn-outline-danger">로그아웃</a>
 
                 <!-- 관리자 페이지 버튼 -->
-                <a th:if="${session.user != null and session.user.role.name() == 'ADMIN'}"
+                <a th:if="${session.user != null and session.user.role != null and session.user.role.name() == 'ADMIN'}"
                    href="/admin/dashboard"
                    class="btn btn-outline-warning me-2">관리자 페이지</a>
 

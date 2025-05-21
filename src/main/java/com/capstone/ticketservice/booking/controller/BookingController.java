@@ -50,6 +50,7 @@ public class BookingController {
     /**
      * 예매 프로세스 시작 - 대기열 확인 후 분기 처리
      */
+    /**
     @GetMapping("/events/{eventId}/booking/start")
     public String startBooking(@PathVariable Long eventId,
                                Model model,
@@ -131,8 +132,48 @@ public class BookingController {
             return "redirect:/";
         }
     }
+    **/
 
 
+    /**
+     * redis cache를 활용한 대기열 큐
+     */
+    @GetMapping("/events/{eventId}/booking/start")
+    public String startBooking(@PathVariable Long eventId,
+                               Model model,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+
+        Users user = (Users) session.getAttribute("user");
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
+            return "redirect:/api/sessions/login";
+        }
+
+        try {
+            Long userId = user.getUserId();
+
+            // Redis & DB 통합 대기열 등록/조회
+            WaitingQueue queue = waitingQueueService.joinQueueIfAbsent(eventId, user);
+
+            if (queue.getStatus() == WaitingQueue.QueueStatus.PROCESSING) {
+                return "redirect:/api/events/" + eventId + "/sections";
+            }
+
+            // WAITING 상태 → Redis 큐에서 순번 확인
+            int myPosition = waitingQueueService.getUserPosition(eventId, userId) + 1;
+
+            model.addAttribute("myPosition", myPosition);
+            model.addAttribute("eventId", eventId);
+
+            return "/waitingQueue/waitingQueue"; // 대기열 상태 HTML 렌더링
+
+        } catch (Exception e) {
+            log.error("대기열 처리 중 예외 발생: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "대기열 처리 중 오류가 발생했습니다.");
+            return "redirect:/";
+        }
+    }
 
     //todo: 예매 프로세스 시작
 
