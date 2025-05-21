@@ -26,7 +26,7 @@ public class Orders {
     private String paymentStatus;
 
     @Column(name = "order_status")
-    private String orderStatus;
+    private String orderStatus; //CREATED , COMPLETED ,CANCELLED
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;
