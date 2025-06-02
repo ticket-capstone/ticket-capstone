@@ -16,6 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -79,7 +80,7 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrderDto createOrder(Long userId, Long performanceSeatId) {
         log.info("주문 생성 시작: userId={}, performanceSeatId={}", userId, performanceSeatId);
         try {
@@ -144,7 +145,7 @@ public class OrderService {
         }
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrderDto completePayment(Long orderId, String paymentMethod) {
         try {
             log.info("결제 처리 시작: orderId={}, paymentMethod={}", orderId, paymentMethod);

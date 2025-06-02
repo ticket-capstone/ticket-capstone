@@ -1,9 +1,11 @@
 package com.capstone.ticketservice.ticket.repository;
 
 import com.capstone.ticketservice.ticket.model.Ticket;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -44,7 +46,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      * @param orderItemId 주문 항목 ID
      * @return 해당하는 티켓 (존재하지 않으면 빈 Optional)
      */
-    Optional<Ticket> findByOrderItemOrderItemId(Long orderItemId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Ticket t WHERE t.orderItem.orderItemId = :orderItemId")
+    Optional<Ticket> findByOrderItemOrderItemIdWithLock(@Param("orderItemId") Long orderItemId);
 
     /**
      * 사용되지 않은 유효한 티켓 수를 계산합니다.
@@ -58,4 +62,5 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND t.status = 'ISSUED'")
     long countValidTicketsByUserId(@Param("userId") Long userId);
 
+    Optional<Ticket> findByOrderItemOrderItemId(Long orderItemId);
 }
