@@ -32,5 +32,7 @@ public interface WaitingQueueRepository extends JpaRepository<WaitingQueue, Long
                                          @Param("status") WaitingQueue.QueueStatus status,
                                          @Param("queueId") Long queueId);
 
+    int countByEventEventIdAndStatus(Long eventId, WaitingQueue.QueueStatus status);
+    List<WaitingQueue> findAllByEventEventIdAndStatus(Long eventId, WaitingQueue.QueueStatus status);
 
 }

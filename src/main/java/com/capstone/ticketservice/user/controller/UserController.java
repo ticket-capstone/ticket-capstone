@@ -5,6 +5,7 @@ import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,7 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Optional;
 
-
+@Slf4j
 @Controller
 @RequestMapping("/api/sessions")
 public class UserController {
@@ -33,13 +34,16 @@ public class UserController {
 
     @PostMapping("/login")
     public String login(@ModelAttribute LoginRequestDto requestDto, HttpServletRequest request, Model model) {
+        log.info("로그인 시도: {}", requestDto.getUsername());
         boolean success = userService.login(requestDto.getUsername(), requestDto.getPassword());
+
         if (success) {
             Optional<Users> userOpt = userService.findByUsername(requestDto.getUsername());
             if (userOpt.isPresent()) {
                 request.getSession().setAttribute("user", userOpt.get());
             }
-            return "redirect:/"; // 홈으로 리다이렉트
+            log.info("로그인 성공: {}", requestDto.getUsername());
+            return "/home";
         } else {
             model.addAttribute("error", "아이디 또는 비밀번호가 틀렸습니다.");
             return "user/login"; // 다시 로그인 페이지
@@ -59,4 +63,10 @@ public class UserController {
 
         return "redirect:/"; // 홈으로 리다이렉트
     }
+
+    @GetMapping("/home")
+    public String home() {
+        return "home";
+    }
+
 }
