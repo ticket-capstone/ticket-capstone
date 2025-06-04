@@ -12,13 +12,11 @@ import com.capstone.ticketservice.waitingqueue.service.WaitingQueueService;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Controller
 @RequestMapping("/api")
@@ -139,13 +137,14 @@ public class BookingController {
      * redis cache를 활용한 대기열 큐
      */
     @GetMapping("/events/{eventId}/booking/start")
-    public String startBooking(@PathVariable Long eventId,
+    public String startsBooking(@PathVariable Long eventId,
                                Model model,
                                HttpSession session,
                                RedirectAttributes redirectAttributes) {
 
         Users user = (Users) session.getAttribute("user");
         if (user == null) {
+            log.warn("⚠️ 세션에 user 없음. 로그인 필요");
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
             return "redirect:/api/sessions/login";
         }
@@ -155,6 +154,7 @@ public class BookingController {
 
             // Redis & DB 통합 대기열 등록/조회
             WaitingQueue queue = waitingQueueService.joinQueueIfAbsent(eventId, user);
+            log.debug(">>> joinQueueIfAbsent 실행됨: userId = {}", user.getUserId());
 
             if (queue.getStatus() == WaitingQueue.QueueStatus.PROCESSING) {
                 return "redirect:/api/events/" + eventId + "/sections";
@@ -173,6 +173,11 @@ public class BookingController {
             redirectAttributes.addFlashAttribute("errorMessage", "대기열 처리 중 오류가 발생했습니다.");
             return "redirect:/";
         }
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void processEvents() {
+        waitingQueueService.processNextInQueue(1L);
     }
 
     //todo: 예매 프로세스 시작

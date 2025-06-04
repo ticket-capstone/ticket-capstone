@@ -33,7 +33,6 @@ public class RedisConfig {
         return template;
     }
 
-
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
