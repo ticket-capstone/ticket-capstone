@@ -61,7 +61,7 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">주문 생성하기</button>
-                            <a th:href="@{/api/performance-seats/{id}(id=${seat.performanceSeatId})}" class="btn btn-secondary">돌아가기</a>
+                            <a th:href="@{/api/events/{eventId}/seats(eventId=${eventId}, sectionId=${sectionId})}" class="btn btn-secondary">좌석 선택으로 돌아가기</a>
                         </div>
                     </form>
                 </div>

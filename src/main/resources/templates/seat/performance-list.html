@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/default :: layout(~{::title}, ~{::section})}">
 <head>
-    <title>공연 좌석 현황</title>
+    <title>좌석 선택</title>
 </head>
 <body>
 <section>
-    <h2 class="mb-4">공연 좌석 현황</h2>
+    <h2 class="mb-4">좌석 선택</h2>
 
     <div class="alert alert-info">
-        이 페이지에서는 공연의 전체 좌석 현황을 확인할 수 있습니다.
+        좌석을 선택하여 예매를 진행하세요.
     </div>
 
+    <!-- 필터 섹션 (관리자용에서 가져옴) -->
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card">
@@ -33,19 +34,6 @@
                             <select id="statusFilter" name="status" class="form-select">
                                 <option value="">전체 상태</option>
                                 <option value="AVAILABLE" th:selected="${status != null && status == 'AVAILABLE'}">예매가능</option>
-                                <option value="RESERVED" th:selected="${status != null && status == 'RESERVED'}">예약됨</option>
-                                <option value="SOLD" th:selected="${status != null && status == 'SOLD'}">판매완료</option>
-                                <option value="LOCKED" th:selected="${status != null && status == 'LOCKED'}">일시잠금</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="priceFilter" class="form-label">가격대</label>
-                            <select id="priceFilter" name="priceRange" class="form-select">
-                                <option value="">전체 가격대</option>
-                                <option value="0-50000" th:selected="${priceRange != null && priceRange == '0-50000'}">5만원 이하</option>
-                                <option value="50001-100000" th:selected="${priceRange != null && priceRange == '50001-100000'}">5만원~10만원</option>
-                                <option value="100001-150000" th:selected="${priceRange != null && priceRange == '100001-150000'}">10만원~15만원</option>
-                                <option value="150001-999999" th:selected="${priceRange != null && priceRange == '150001-999999'}">15만원 이상</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -58,12 +46,180 @@
     </div>
 
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-9">
+            <!-- 좌석 배치도 -->
+            <div class="seat-map-container mb-4 p-3 bg-light rounded">
+                <h4 class="text-center mb-3">좌석 배치도</h4>
+
+                <div class="stage-area text-center p-2 mb-4 bg-secondary text-white">
+                    무대
+                </div>
+
+                <div class="seat-grid">
+                    <div th:if="${#lists.isEmpty(seats)}" class="alert alert-warning">
+                        선택한 조건에 맞는 좌석이 없습니다.
+                    </div>
+
+                    <!-- A구역 좌석들 -->
+                    <div class="section-group mb-4">
+                        <h5 class="text-center mb-3">A구역</h5>
+
+                        <!-- A행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">A</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'A구역' && seat.rowName == 'A'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status + ', 구역: ' + seat.sectionName + ', 행: ' + seat.rowName}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+
+                        <!-- B행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">B</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'A구역' && seat.rowName == 'B'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status + ', 구역: ' + seat.sectionName + ', 행: ' + seat.rowName}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B구역 좌석들 (A구역과 같은 방식으로) -->
+                    <div th:if="${!#lists.isEmpty(seats)}" class="section-group mb-4">
+                        <h5 class="text-center mb-3">B구역</h5>
+
+                        <!-- A행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">A</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'B구역' && seat.rowName == 'A'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+
+                        <!-- B행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">B</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'B구역' && seat.rowName == 'B'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C구역 좌석들 -->
+                    <div th:if="${!#lists.isEmpty(seats)}" class="section-group mb-4">
+                        <h5 class="text-center mb-3">C구역</h5>
+
+                        <!-- C구역 A행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">A</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'C구역' && seat.rowName == 'A'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+
+                        <!-- C구역 B행 -->
+                        <div class="seat-row d-flex justify-content-center mb-2">
+                            <div class="row-label me-2">B</div>
+                            <div th:each="seat : ${seats}"
+                                 th:if="${seat.sectionName == 'C구역' && seat.rowName == 'B'}"
+                                 class="seat-item mx-1"
+                                 th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                               (seat.status == 'SOLD' ? 'seat-sold' :
+                                               (seat.status == 'LOCKED' ? 'seat-locked' :
+                                               (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}"
+                                 th:title="${'상태: ' + seat.status}">
+
+                                <a th:if="${seat.status == 'AVAILABLE'}"
+                                   th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                                   class="seat-link d-block text-center"
+                                   th:text="${seat.seatNumber}">1</a>
+
+                                <span th:if="${seat.status != 'AVAILABLE'}"
+                                      class="d-block text-center seat-text"
+                                      th:text="${seat.seatNumber}">1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 테이블 형태로도 보여주기 (옵션) -->
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped">
                     <thead>
                     <tr>
-                        <th>ID</th>
                         <th>구역</th>
                         <th>행</th>
                         <th>좌석번호</th>
@@ -74,11 +230,10 @@
                     </thead>
                     <tbody>
                     <tr th:if="${#lists.isEmpty(seats)}">
-                        <td colspan="7" class="text-center">등록된 좌석이 없습니다.</td>
+                        <td colspan="6" class="text-center">등록된 좌석이 없습니다.</td>
                     </tr>
                     <tr th:each="seat : ${seats}">
-                        <td th:text="${seat.performanceSeatId}">1</td>
-                        <td th:text="${seat.sectionName}">VIP</td>
+                        <td th:text="${seat.sectionName}">A구역</td>
                         <td th:text="${seat.rowName}">A</td>
                         <td th:text="${seat.seatNumber}">1</td>
                         <td th:text="${#numbers.formatInteger(seat.price, 0, 'COMMA') + '원'}">150,000원</td>
@@ -89,68 +244,156 @@
                             <span th:if="${seat.status == 'LOCKED'}" class="badge bg-secondary">일시잠금</span>
                         </td>
                         <td>
-                            <a th:href="@{/api/performance-seats/{id}(id=${seat.performanceSeatId})}" class="btn btn-sm btn-info">상세</a>
-                            <form th:if="${seat.status == 'AVAILABLE'}"
-                                  th:action="@{/api/performance-seats/{id}/lock(id=${seat.performanceSeatId})}"
-                                  method="post"
-                                  class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-warning">잠금</button>
-                            </form>
+                            <a th:if="${seat.status == 'AVAILABLE'}"
+                               th:href="@{/api/orders/create/{seatId}(seatId=${seat.performanceSeatId})}"
+                               class="btn btn-sm btn-primary">선택</a>
+                            <span th:if="${seat.status != 'AVAILABLE'}" class="text-muted">-</span>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- 페이지네이션 -->
-            <nav aria-label="Page navigation" th:if="${totalPages != null && totalPages > 0}">
-                <ul class="pagination justify-content-center">
-                    <!-- 이전 버튼 -->
-                    <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
-                        <a class="page-link"
-                           th:href="@{/api/events/{eventId}/seats(
-                   eventId=${eventId},
-                   page=${currentPage - 1},
-                   sectionId=${sectionId != null ? sectionId : ''},
-                   status=${status != null && status != '' ? status : ''},
-                   priceRange=${priceRange != null ? priceRange : ''}
-               )}"
-                           tabindex="-1">이전</a>
-                    </li>
-
-                    <!-- 페이지 번호들 -->
-                    <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                        th:class="${i == currentPage ? 'page-item active' : 'page-item'}">
-                        <a class="page-link"
-                           th:href="@{/api/events/{eventId}/seats(
-                   eventId=${eventId},
-                   page=${i},
-                   sectionId=${sectionId != null ? sectionId : ''},
-                   status=${status != null && status != '' ? status : ''},
-                   priceRange=${priceRange != null ? priceRange : ''}
-               )}"
-                           th:text="${i + 1}">1</a>
-                    </li>
-
-                    <!-- 다음 버튼 -->
-                    <li class="page-item" th:classappend="${currentPage + 1 >= totalPages ? 'disabled' : ''}">
-                        <a class="page-link"
-                           th:href="@{/api/events/{eventId}/seats(
-                   eventId=${eventId},
-                   page=${currentPage + 1},
-                   sectionId=${sectionId != null ? sectionId : ''},
-                   status=${status != null && status != '' ? status : ''},
-                   priceRange=${priceRange != null ? priceRange : ''}
-               )}">다음</a>
-                    </li>
-                </ul>
-            </nav>
-
             <div class="mt-3">
-                <a th:href="@{/api/events/{id}(id=${eventId})}" class="btn btn-secondary">공연 상세로 돌아가기</a>
+                <a th:href="@{/api/events/{id}/sections(id=${eventId})}" class="btn btn-secondary">구역 선택으로 돌아가기</a>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    좌석 안내
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <span class="seat-legend seat-available"></span> 예매가능
+                    </div>
+                    <div class="mb-2">
+                        <span class="seat-legend seat-reserved"></span> 예약됨
+                    </div>
+                    <div class="mb-2">
+                        <span class="seat-legend seat-sold"></span> 판매완료
+                    </div>
+                    <div class="mb-2">
+                        <span class="seat-legend seat-locked"></span> 일시잠금
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .seat-map-container {
+            overflow-x: auto;
+        }
+        .stage-area {
+            border-radius: 50px;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .section-group {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+        }
+        .seat-row {
+            align-items: center;
+        }
+        .row-label {
+            width: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .seat-item {
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        /* 좌석 상태별 스타일 */
+        .seat-available {
+            background-color: #28a745 !important;
+            color: white !important;
+        }
+        .seat-available:hover {
+            background-color: #218838 !important;
+            transform: scale(1.1);
+        }
+
+        .seat-sold {
+            background-color: #dc3545 !important;
+            color: white !important;
+            cursor: not-allowed;
+        }
+
+        .seat-locked {
+            background-color: #6c757d !important;
+            color: white !important;
+            cursor: not-allowed;
+        }
+
+        .seat-reserved {
+            background-color: #ffc107 !important;
+            color: black !important;
+            cursor: not-allowed;
+        }
+
+        .seat-unavailable {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            cursor: not-allowed;
+        }
+
+        .seat-link {
+            color: inherit !important;
+            text-decoration: none !important;
+            width: 100%;
+            height: 100%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seat-text {
+            color: inherit !important;
+            width: 100%;
+            height: 100%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seat-legend {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        /* 범례 색상 */
+        .seat-legend.seat-available {
+            background-color: #28a745;
+        }
+        .seat-legend.seat-reserved {
+            background-color: #ffc107;
+        }
+        .seat-legend.seat-sold {
+            background-color: #dc3545;
+        }
+        .seat-legend.seat-locked {
+            background-color: #6c757d;
+        }
+    </style>
 </section>
 </body>
 </html>

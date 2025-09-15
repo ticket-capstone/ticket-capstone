@@ -86,6 +86,8 @@ public class OrderController {
             model.addAttribute("seat", seat);
             model.addAttribute("event", event);
             model.addAttribute("user", user);
+            model.addAttribute("eventId", seat.getEventId());
+            model.addAttribute("sectionId", seat.getSectionId());
 
             // 결제 정보 계산
             int totalAmount = seat.getPrice();

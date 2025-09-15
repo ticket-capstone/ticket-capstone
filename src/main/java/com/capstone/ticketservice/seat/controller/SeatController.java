@@ -31,18 +31,42 @@ public class SeatController {
     }
 
     @GetMapping("/sections/{id}/seats")
-    public String getSeatsBySectionId(@PathVariable("id") Long sectionId, Model model) {
-        List<SeatDto> seats = seatService.getSeatBySectionId(sectionId);
+    public String getSeatsBySectionId(@PathVariable("id") Long sectionId,
+            @RequestParam(required = false, defaultValue = "1") Long eventId,
+            Model model) {
+
+        List<SeatDto> basicSeats = seatService.getSeatBySectionId(sectionId);
+        List<SeatDto> seatsWithStatus = new ArrayList<>();
+
+        // 각 좌석에 대해 공연별 상태 정보를 가져와서 SeatDto의 status 업데이트
+        for (SeatDto seat : basicSeats) {
+            try {
+                // 해당 좌석의 공연별 상태 조회
+                PerformanceSeatDto performanceSeat = performanceSeatService
+                        .getPerformanceSeatBySeatIdAndEventId(seat.getSeatId(), eventId);
+
+                // SeatDto의 status를 실제 공연 좌석 상태로 업데이트
+                seat.setStatus(performanceSeat.getStatus());
+
+            } catch (Exception e) {
+                // 공연 좌석 정보가 없는 경우 UNAVAILABLE로 설정
+                seat.setStatus("UNAVAILABLE");
+            }
+
+            seatsWithStatus.add(seat);
+        }
 
         // 행별로 좌석 그룹화
         Map<String, List<SeatDto>> seatsByRow = new TreeMap<>();
-        for (SeatDto seat : seats) {
+        for (SeatDto seat : seatsWithStatus) {
             seatsByRow.computeIfAbsent(seat.getRowName(), k -> new ArrayList<>()).add(seat);
         }
 
-        model.addAttribute("seats", seats);
+        model.addAttribute("seats", seatsWithStatus);
         model.addAttribute("seatsByRow", seatsByRow);
         model.addAttribute("sectionId", sectionId);
+        model.addAttribute("eventId", eventId); // eventId도 전달
+
         return "seat/list";
     }
 
