@@ -31,14 +31,24 @@
                         <div class="row-label me-2">A</div>
                         <div th:each="seat : ${seats}" th:if="${seat.rowName == 'A'}"
                              class="seat-item mx-1"
-                             th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' : 'seat-taken'}">
+                             th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                           (seat.status == 'SOLD' ? 'seat-sold' :
+                                           (seat.status == 'LOCKED' ? 'seat-locked' :
+                                           (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}">
+
+                            <!-- 예매 가능한 좌석만 링크 제공 -->
                             <a th:if="${seat.status == 'AVAILABLE'}"
                                th:href="@{/api/seats/{id}(id=${seat.seatId})}"
                                class="seat-link d-block text-center"
                                th:text="${seat.seatNumber}">1</a>
+
+                            <!-- 예매 불가능한 좌석은 텍스트만 표시 -->
                             <span th:if="${seat.status != 'AVAILABLE'}"
-                                  class="d-block text-center"
-                                  th:text="${seat.seatNumber}">1</span>
+                                  class="d-block text-center seat-text"
+                                  th:text="${seat.seatNumber}"
+                                  th:title="${seat.status == 'SOLD' ? '판매완료' :
+                                           (seat.status == 'LOCKED' ? '일시잠금' :
+                                           (seat.status == 'RESERVED' ? '예약됨' : seat.status))}">1</span>
                         </div>
                     </div>
 
@@ -47,14 +57,22 @@
                         <div class="row-label me-2">B</div>
                         <div th:each="seat : ${seats}" th:if="${seat.rowName == 'B'}"
                              class="seat-item mx-1"
-                             th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' : 'seat-taken'}">
+                             th:classappend="${seat.status == 'AVAILABLE' ? 'seat-available' :
+                                           (seat.status == 'SOLD' ? 'seat-sold' :
+                                           (seat.status == 'LOCKED' ? 'seat-locked' :
+                                           (seat.status == 'RESERVED' ? 'seat-reserved' : 'seat-unavailable')))}">
+
                             <a th:if="${seat.status == 'AVAILABLE'}"
                                th:href="@{/api/seats/{id}(id=${seat.seatId})}"
                                class="seat-link d-block text-center"
                                th:text="${seat.seatNumber}">1</a>
+
                             <span th:if="${seat.status != 'AVAILABLE'}"
-                                  class="d-block text-center"
-                                  th:text="${seat.seatNumber}">1</span>
+                                  class="d-block text-center seat-text"
+                                  th:text="${seat.seatNumber}"
+                                  th:title="${seat.status == 'SOLD' ? '판매완료' :
+                                           (seat.status == 'LOCKED' ? '일시잠금' :
+                                           (seat.status == 'RESERVED' ? '예약됨' : seat.status))}">1</span>
                         </div>
                     </div>
                 </div>
@@ -88,6 +106,7 @@
                             <a th:if="${seat.status == 'AVAILABLE'}"
                                th:href="@{/api/seats/{id}(id=${seat.seatId})}"
                                class="btn btn-sm btn-primary">상세보기</a>
+                            <span th:if="${seat.status != 'AVAILABLE'}" class="text-muted">-</span>
                         </td>
                     </tr>
                     </tbody>
@@ -114,7 +133,7 @@
                     <div class="mb-2">
                         <span class="seat-legend seat-sold"></span> 판매완료
                     </div>
-                    <div>
+                    <div class="mb-2">
                         <span class="seat-legend seat-locked"></span> 일시잠금
                     </div>
                 </div>
@@ -137,6 +156,7 @@
         .row-label {
             width: 20px;
             text-align: center;
+            font-weight: bold;
         }
         .seat-item {
             width: 30px;
@@ -144,37 +164,88 @@
             line-height: 30px;
             border-radius: 5px;
             text-align: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+
+        /* 좌석 상태별 스타일 - 명확히 구분 */
         .seat-available {
-            background-color: #28a745;
-            color: white;
+            background-color: #28a745 !important;
+            color: white !important;
         }
-        .seat-taken {
-            background-color: #dc3545;
-            color: white;
+        .seat-available:hover {
+            background-color: #218838 !important;
+            transform: scale(1.1);
         }
-        .seat-reserved {
-            background-color: #ffc107;
-            color: black;
+
+        .seat-sold {
+            background-color: #dc3545 !important;
+            color: white !important;
+            cursor: not-allowed;
         }
+
         .seat-locked {
-            background-color: #6c757d;
-            color: white;
+            background-color: #6c757d !important;
+            color: white !important;
+            cursor: not-allowed;
         }
+
+        .seat-reserved {
+            background-color: #ffc107 !important;
+            color: black !important;
+            cursor: not-allowed;
+        }
+
+        .seat-unavailable {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            cursor: not-allowed;
+        }
+
         .seat-link {
-            color: white;
-            text-decoration: none;
+            color: inherit !important;
+            text-decoration: none !important;
             width: 100%;
             height: 100%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
         }
+
+        .seat-text {
+            color: inherit !important;
+            width: 100%;
+            height: 100%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
         .seat-legend {
             display: inline-block;
             width: 20px;
             height: 20px;
             margin-right: 10px;
             border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        /* 범례 색상 */
+        .seat-legend.seat-available {
+            background-color: #28a745;
+        }
+        .seat-legend.seat-reserved {
+            background-color: #ffc107;
+        }
+        .seat-legend.seat-sold {
+            background-color: #dc3545;
+        }
+        .seat-legend.seat-locked {
+            background-color: #6c757d;
         }
     </style>
+
 </section>
 </body>
 </html>

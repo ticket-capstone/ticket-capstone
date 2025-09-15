@@ -34,7 +34,7 @@ public class PerformanceSeatController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priceRange,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             Model model) {
 
         try {
