@@ -79,13 +79,12 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
-                        <a th:href="@{/api/tickets/my-tickets}" class="btn btn-secondary">
+                        <a th:href="@{/api/ticket/my-tickets}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> 티켓 목록으로
                         </a>
 
-                        <!-- 유효한 티켓이고 환불 가능한 경우에만 취소 버튼 표시 -->
-                        <form th:if="${ticket.status == 'ISSUED' && ticket.isRefundable}"
-                              th:action="@{/api/tickets/{id}/cancel(id=${ticket.ticketId})}"
+                        <!-- 티켓 취소 버튼 - 모든 경우에 표시 -->
+                        <form th:action="@{/api/ticket/{id}/cancel(id=${ticket.ticketId})}"
                               method="post"
                               class="d-inline">
                             <button type="submit" class="btn btn-danger"

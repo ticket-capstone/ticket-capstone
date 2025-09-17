@@ -2,13 +2,13 @@ package com.capstone.ticketservice.ticket.service;
 
 import com.capstone.ticketservice.order.model.OrderItem;
 import com.capstone.ticketservice.order.repository.OrderItemRepository;
+import com.capstone.ticketservice.seat.model.PerformanceSeat;
+import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
 import com.capstone.ticketservice.ticket.dto.TicketDto;
-import com.capstone.ticketservice.ticket.dto.TicketResponseDto;
 import com.capstone.ticketservice.ticket.model.Ticket;
 import com.capstone.ticketservice.ticket.repository.TicketRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +33,14 @@ public class TicketService {
     private final OrderItemRepository orderItemRepository;
     private final Random random = new Random();
     private final EntityManager entityManager;
+    private final PerformanceSeatRepository performanceSeatRepository;
 
     @Autowired
-    public TicketService(TicketRepository ticketRepository, OrderItemRepository orderItemRepository, EntityManager entityManager) {
+    public TicketService(TicketRepository ticketRepository, OrderItemRepository orderItemRepository, EntityManager entityManager, PerformanceSeatRepository performanceSeatRepository) {
         this.ticketRepository = ticketRepository;
         this.orderItemRepository = orderItemRepository;
         this.entityManager = entityManager;
+        this.performanceSeatRepository = performanceSeatRepository;
     }
 
     /**
@@ -174,7 +176,7 @@ public class TicketService {
 
 
     /**
-     * 티켓을 취소합니다.
+     * 티켓을 취소하고 관련 좌석을 다시 예약 가능한 상태로 변경합니다.
      * @param ticketId 티켓 ID
      * @return 업데이트된 티켓 DTO
      */
@@ -193,14 +195,42 @@ public class TicketService {
             throw new IllegalStateException("이미 취소된 티켓입니다: " + ticketId);
         }
 
-        // 티켓 취소 처리
-        ticket.setStatus("CANCELLED");
-        ticket.setUpdatedAt(LocalDateTime.now());
+        try {
+            // 1. 티켓 취소 처리
+            ticket.setStatus("CANCELLED");
+            ticket.setUpdatedAt(LocalDateTime.now());
+            Ticket updatedTicket = ticketRepository.save(ticket);
+            log.info("티켓이 취소되었습니다: ticketId={}", updatedTicket.getTicketId());
 
-        Ticket updatedTicket = ticketRepository.save(ticket);
-        log.info("티켓이 취소되었습니다: ticketId={}", updatedTicket.getTicketId());
+            // 2. 연관된 OrderItem 취소 처리
+            OrderItem orderItem = ticket.getOrderItem();
+            if (orderItem != null) {
+                orderItem.setStatus("CANCELLED");
+                orderItem.setUpdatedAt(LocalDateTime.now());
+                orderItemRepository.save(orderItem);
+                log.info("주문 항목이 취소되었습니다: orderItemId={}", orderItem.getOrderItemId());
 
-        return convertToDto(updatedTicket);
+                // 3. 연관된 PerformanceSeat를 다시 예약 가능한 상태로 변경
+                PerformanceSeat performanceSeat = orderItem.getPerformanceSeat();
+                if (performanceSeat != null) {
+                    // 좌석 상태를 AVAILABLE로 변경
+                    performanceSeat.setStatus("AVAILABLE");
+                    performanceSeat.setLockUntil(null);
+                    performanceSeat.setLockedByUser(null);
+                    performanceSeat.setUpdatedAt(LocalDateTime.now());
+
+                    performanceSeatRepository.save(performanceSeat);
+                    log.info("좌석 상태가 복원되었습니다: performanceSeatId={}, status=AVAILABLE",
+                            performanceSeat.getPerformanceSeatId());
+                }
+            }
+
+            return convertToDto(updatedTicket);
+
+        } catch (Exception e) {
+            log.error("티켓 취소 처리 중 오류 발생: ticketId={}, error={}", ticketId, e.getMessage(), e);
+            throw new RuntimeException("티켓 취소 처리 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
     }
 
 

@@ -147,7 +147,7 @@ public class TicketController {
             // 티켓 소유자 확인
             if (!ticket.getUserId().equals(user.getUserId())) {
                 redirectAttributes.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-                return "redirect:/api/tickets/my-tickets";
+                return "redirect:/api/ticket/my-tickets";
             }
 
             // 티켓 상태 확인
