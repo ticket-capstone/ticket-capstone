@@ -24,3 +24,9 @@ spring:
 logging:
   level:
     org.springframework.cache: trace
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus"
