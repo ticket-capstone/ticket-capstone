@@ -41,4 +41,13 @@ public class UserService {
     public Optional<Users> findByUsername(String userName) {
         return userRepository.findByUsername(userName);
     }
+
+    /**
+     * 로그인 처리 - 인증 성공 시 사용자 객체 반환
+     * N+1 문제 해결: 한 번의 조회로 인증과 사용자 정보 모두 처리
+     */
+    public Optional<Users> authenticateUser(String username, String password) {
+        return userRepository.findByUsername(username)
+                .filter(user -> user.getPassword().equals(password));
+    }
 }
