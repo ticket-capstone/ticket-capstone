@@ -1,10 +1,7 @@
 package com.capstone.ticketservice.order.repository;
 
 import com.capstone.ticketservice.order.model.OrderItem;
-import jakarta.persistence.LockModeType;
-import org.springframework.beans.PropertyValues;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -26,7 +23,16 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrderOrderId(@Param("orderId") Long orderId);
     List<OrderItem> findByPerformanceSeatPerformanceSeatId(Long performanceSeatId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT oi FROM OrderItem oi WHERE oi.orderItemId = :id")
-    Optional<OrderItem> findByIdWithLock(@Param("id") Long id);
+    /**
+     * 여러 주문의 OrderItem들을 한 번에 조회 (N+1 문제 해결)
+     */
+    @Query("SELECT oi FROM OrderItem oi " +
+            "LEFT JOIN FETCH oi.order o " +
+            "LEFT JOIN FETCH o.user " +
+            "LEFT JOIN FETCH oi.performanceSeat ps " +
+            "LEFT JOIN FETCH ps.seat s " +
+            "LEFT JOIN FETCH s.section sec " +
+            "LEFT JOIN FETCH ps.event e " +
+            "WHERE oi.order.orderId IN :orderIds")
+    List<OrderItem> findByOrderIdsWithFetch(@Param("orderIds") List<Long> orderIds);
 }

@@ -8,8 +8,6 @@ import com.capstone.ticketservice.order.repository.OrderItemRepository;
 import com.capstone.ticketservice.order.repository.OrderRepository;
 import com.capstone.ticketservice.seat.model.PerformanceSeat;
 import com.capstone.ticketservice.seat.repository.PerformanceSeatRepository;
-import com.capstone.ticketservice.ticket.dto.TicketDto;
-import com.capstone.ticketservice.ticket.service.TicketService;
 import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.capstone.ticketservice.order.dto.OrderItemDto.fromEntity;
@@ -33,51 +32,38 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final PerformanceSeatRepository performanceSeatRepository;
     private final UserRepository userRepository;
-    private final TicketService ticketService;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         PerformanceSeatRepository performanceSeatRepository,
-                        UserRepository userRepository,
-                        TicketService ticketService) {
+                        UserRepository userRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.performanceSeatRepository = performanceSeatRepository;
         this.userRepository = userRepository;
-        this.ticketService = ticketService;
     }
 
     @Transactional(readOnly = true)
     public OrderDto getOrderById(Long orderId) {
-        Orders order = orderRepository.findById(orderId)
+        Orders order = orderRepository.findByIdWithFetch(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
 
-        // OrderItem 목록 명시적으로 조회
+        // 단일 주문이므로 기존 방식 유지 (성능상 문제없음)
         List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
 
-        // 기본 OrderDto 생성
         OrderDto orderDto = OrderDto.fromEntity(order);
 
-        // OrderItem 정보 명시적 설정
         if (orderItems != null && !orderItems.isEmpty()) {
             List<OrderItemDto> orderItemDtos = orderItems.stream()
                     .map(OrderItemDto::fromEntity)
                     .collect(Collectors.toList());
             orderDto.setOrderItems(orderItemDtos);
         } else {
-            // 비어있는 리스트로 초기화 (null 방지)
             orderDto.setOrderItems(new ArrayList<>());
         }
 
         return orderDto;
-    }
-
-    public List<OrderItemDto> getOrderItemsByOrderId(Long orderId) {
-        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
-        return orderItems.stream()
-                .map(OrderItemDto::fromEntity)
-                .collect(Collectors.toList());
     }
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
@@ -241,26 +227,39 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderDto> getOrdersByUserId(Long userId) {
-        List<Orders> orders = orderRepository.findByUserId(userId);
-        List<OrderDto> orderDtos = new ArrayList<>();
+        // 1. Orders만 먼저 조회
+        List<Orders> orders = orderRepository.findByUserIdWithFetch(userId);
 
+        if (orders.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. 모든 Order ID 수집
+        List<Long> orderIds = orders.stream()
+                .map(Orders::getOrderId)
+                .collect(Collectors.toList());
+
+        // 3. 모든 OrderItem을 한 번에 조회 (N+1 문제 해결!)
+        List<OrderItem> allOrderItems = orderItemRepository.findByOrderIdsWithFetch(orderIds);
+
+        // 4. OrderItem들을 Order별로 그룹화
+        Map<Long, List<OrderItem>> orderItemMap = allOrderItems.stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getOrderId()));
+
+        // 5. OrderDto 생성
+        List<OrderDto> orderDtos = new ArrayList<>();
         for (Orders order : orders) {
-            // 각 주문에 대한 OrderDto 생성
             OrderDto orderDto = OrderDto.fromEntity(order);
 
-            // 각 주문의 OrderItem을 명시적으로 조회
-            List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(order.getOrderId());
+            // 해당 Order의 OrderItems 가져오기
+            List<OrderItem> orderItems = orderItemMap.getOrDefault(order.getOrderId(), new ArrayList<>());
 
-            // OrderItem을 OrderItemDto로 변환하여 설정
             List<OrderItemDto> orderItemDtos = orderItems.stream()
                     .map(item -> {
                         OrderItemDto itemDto = OrderItemDto.fromEntity(item);
-                        // 디버깅 로그 추가
-                        log.debug("Converting OrderItem: id={}, price={}, seatInfo={}, eventName={}",
+                        log.debug("Converting OrderItem: id={}, price={}, eventName={}",
                                 item.getOrderItemId(),
                                 item.getPrice(),
-                                (item.getPerformanceSeat() != null && item.getPerformanceSeat().getSeat() != null) ?
-                                        item.getPerformanceSeat().getSeat().getRowName() + item.getPerformanceSeat().getSeat().getSeatNumber() : "null",
                                 (item.getPerformanceSeat() != null && item.getPerformanceSeat().getEvent() != null) ?
                                         item.getPerformanceSeat().getEvent().getName() : "null");
                         return itemDto;
