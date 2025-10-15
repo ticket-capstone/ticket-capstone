@@ -13,16 +13,14 @@ import jakarta.persistence.TypedQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -107,73 +105,45 @@ public class TicketService {
     }
 
     /**
-     * 주문의 모든 주문 항목에 대해 티켓을 발급합니다.
-     * @param orderId 주문 ID
-     * @return 발급된 티켓 DTO 목록
-     */
-    @Transactional
-    public List<TicketDto> issueTicketsForOrder(Long orderId) {
-        log.info("주문에 대한 티켓 발급 시작: orderId={}", orderId);
-
-        // 주문에 속한 모든 주문 항목 조회
-        List<OrderItem> orderItems = orderItemRepository.findByOrderOrderId(orderId);
-        log.info("조회된 주문 항목 수: {}", orderItems.size());
-
-        // 각 주문 항목의 ID 로깅
-        orderItems.forEach(item -> {
-            log.info("주문 항목 ID: {}, 상태: {}", item.getOrderItemId(), item.getStatus());
-        });
-
-        // 각 주문 항목에 대해 티켓 발급 전 데이터베이스에 존재하는지 확인
-        if (!orderItems.isEmpty()) {
-            OrderItem firstItem = orderItems.get(0);
-            boolean exists = orderItemRepository.existsById(firstItem.getOrderItemId());
-            log.info("첫 번째 주문 항목 데이터베이스 존재 여부: {}", exists);
-        }
-
-        // 각 주문 항목에 대해 티켓 발급
-        return orderItems.stream()
-                .map(item -> {
-                    try {
-                        return issueTicket(item.getOrderItemId());
-                    } catch (Exception e) {
-                        log.error("주문 항목 {}에 대한 티켓 발급 중 오류: {}",
-                                item.getOrderItemId(), e.getMessage(), e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    /**
      * 티켓 ID로 티켓을 조회합니다.
      * @param ticketId 티켓 ID
      * @return 티켓 DTO
      */
     @Transactional(readOnly = true)
     public TicketDto getTicketById(Long ticketId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketRepository.findByIdWithAllDetails(ticketId)
                 .orElseThrow(() -> new EntityNotFoundException("티켓을 찾을 수 없습니다: " + ticketId));
 
         return convertToDto(ticket);
     }
 
 
-    /**
-     * 사용자 ID와 상태로 티켓 목록을 페이지네이션하여 조회합니다.
-     * @param userId 사용자 ID
-     * @param status 티켓 상태
-     * @param pageable 페이지네이션 정보
-     * @return 티켓 DTO 페이지
-     */
     @Transactional(readOnly = true)
     public Page<TicketDto> getTicketsByUserIdAndStatus(Long userId, String status, Pageable pageable) {
-        Page<Ticket> ticketPage = ticketRepository.findByUserIdAndStatus(userId, status, pageable);
+        // 1. 전체 개수 조회
+        long totalCount = ticketRepository.countByUserIdAndStatus(userId, status);
 
-        return ticketPage.map(this::convertToDto);
+        if (totalCount == 0) {
+            return Page.empty(pageable);
+        }
+
+        // 2. 모든 데이터 조회 (JOIN FETCH로 N+1 해결)
+        List<Ticket> allTickets = ticketRepository.findByUserIdAndStatus(userId, status);
+
+        // 3. 메모리에서 페이징 처리
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allTickets.size());
+
+        List<Ticket> pagedTickets = start >= allTickets.size() ?
+                Collections.emptyList() : allTickets.subList(start, end);
+
+        // 4. 기존 변환 로직 그대로 사용
+        List<TicketDto> ticketDtos = pagedTickets.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(ticketDtos, pageable, totalCount);
     }
-
 
     /**
      * 티켓을 취소하고 관련 좌석을 다시 예약 가능한 상태로 변경합니다.

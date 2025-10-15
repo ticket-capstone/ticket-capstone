@@ -32,17 +32,26 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public String login(@ModelAttribute LoginRequestDto requestDto, HttpServletRequest request, Model model) {
-        boolean success = userService.login(requestDto.getUsername(), requestDto.getPassword());
-        if (success) {
-            Optional<Users> userOpt = userService.findByUsername(requestDto.getUsername());
-            if (userOpt.isPresent()) {
-                request.getSession().setAttribute("user", userOpt.get());
-            }
-            return "redirect:/"; // 홈으로 리다이렉트
+    public String login(@ModelAttribute LoginRequestDto requestDto,
+                        HttpServletRequest request,
+                        Model model) {
+        // 기존: 2번의 DB 조회
+        // boolean success = userService.login(requestDto.getUsername(), requestDto.getPassword());
+        // Optional<Users> userOpt = userService.findByUsername(requestDto.getUsername());
+
+        // 개선: 1번의 DB 조회로 통합
+        Optional<Users> authenticatedUser = userService.authenticateUser(
+                requestDto.getUsername(),
+                requestDto.getPassword()
+        );
+
+        if (authenticatedUser.isPresent()) {
+            Users user = authenticatedUser.get();
+            request.getSession().setAttribute("user", user);
+            return "redirect:/";
         } else {
             model.addAttribute("error", "아이디 또는 비밀번호가 틀렸습니다.");
-            return "user/login"; // 다시 로그인 페이지
+            return "user/login";
         }
     }
 
