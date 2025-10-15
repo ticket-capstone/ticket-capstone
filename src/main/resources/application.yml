@@ -11,22 +11,21 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
     database-platform: org.hibernate.dialect.MySQLDialect
   mvc:
     hiddenmethod:
       filter:
         enabled: true
-logging:
-  level:
-    org.springframework.cache: trace
 
 management:
   endpoints:
     web:
       exposure:
         include: "prometheus"
+
+
+# 테스트용 설정
+test:
+  concurrency:
+    max-threads: 200
+    timeout-seconds: 30
