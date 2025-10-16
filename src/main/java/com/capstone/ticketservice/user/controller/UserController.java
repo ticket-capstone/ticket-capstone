@@ -5,6 +5,7 @@ import com.capstone.ticketservice.user.model.Users;
 import com.capstone.ticketservice.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,7 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Optional;
 
-
+@Slf4j
 @Controller
 @RequestMapping("/api/sessions")
 public class UserController {
@@ -39,6 +40,9 @@ public class UserController {
             if (userOpt.isPresent()) {
                 request.getSession().setAttribute("user", userOpt.get());
             }
+            Users user = userOpt.get();
+            log.info("LOGIN SUCCESS: username={}, userId={}",
+                    user.getName(), user.getUserId());
             return "redirect:/"; // 홈으로 리다이렉트
         } else {
             model.addAttribute("error", "아이디 또는 비밀번호가 틀렸습니다.");

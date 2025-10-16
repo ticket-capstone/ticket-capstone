@@ -50,13 +50,17 @@ public class BookingController {
     /**
      * 예매 프로세스 시작 - 대기열 확인 후 분기 처리
      */
-    @GetMapping("/events/{eventId}/booking/start")
-    public String startBooking(@PathVariable Long eventId,
-                               Model model,
-                               HttpSession session,
-                               RedirectAttributes redirectAttributes) {
 
-        // 1. 로그인 사용자 확인
+    /**
+     * redis cache를 활용한 대기열 큐
+     */
+
+    @GetMapping("/events/{eventId}/booking/start")
+    public String startsBooking(@PathVariable Long eventId,
+                                Model model,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+
         Users user = (Users) session.getAttribute("user");
         if (user == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
@@ -66,68 +70,25 @@ public class BookingController {
         try {
             Long userId = user.getUserId();
 
-            // 2. 대기열 정보 조회
-            Optional<WaitingQueue> optionalQueue = waitingQueueService
-                    .getByUserId(userId);
+            // Redis & DB 통합 대기열 등록/조회
+            WaitingQueue queue = waitingQueueService.joinQueueIfAbsent(eventId, user);
+            log.debug(">>> joinQueueIfAbsent 실행됨: userId = {}", user.getUserId());
 
-            WaitingQueue queue;
-
-            //3-1 기존 대기열에 없을 경우
-            if (optionalQueue.isEmpty()) {
-                boolean isQueueEmpty = waitingQueueService
-                        .getFirstWaitingUser(eventId)
-                        .isEmpty(); // 현재 WAITING 상태인 사람이 없는지 확인
-
-                WaitingQueue.QueueStatus status = isQueueEmpty
-                        ? WaitingQueue.QueueStatus.PROCESSING
-                        : WaitingQueue.QueueStatus.WAITING;
-
-                WaitingQueue newQueue = WaitingQueue.builder()
-                        .user(user)
-                        .event(Event.builder().eventId(eventId).build())
-                        .status(status)
-                        .entryTime(LocalDateTime.now())
-                        .processingStartedAt(isQueueEmpty ? LocalDateTime.now() : null)
-                        .build();
-
-                queue = waitingQueueService.addToQueue(newQueue);
-
-                return "/waitingQueue/waitingQueue";
+            if (queue.getStatus() == WaitingQueue.QueueStatus.PROCESSING) {
+                return "redirect:/api/events/" + eventId + "/sections";
             }
 
-            // 3-2. 기존 대기열에 있으면 상태 확인
-            queue = optionalQueue.get();
-            WaitingQueue.QueueStatus status = queue.getStatus();
+            // WAITING 상태 → Redis 큐에서 순번 확인
+            int myPosition = waitingQueueService.getUserPosition(eventId, userId) + 1;
 
-            switch (status) {
-                case WAITING:
-                    long peopleBeforeMe = waitingQueueService.getRemainingWaitingCount(eventId, queue.getQueueId());
-                    long myPosition = peopleBeforeMe + 1;
+            model.addAttribute("myPosition", myPosition);
+            model.addAttribute("eventId", eventId);
 
-                    model.addAttribute("myPosition", myPosition);
-                    model.addAttribute("eventId", eventId);
-
-                    return "/waitingQueue/waitingQueue"; // 대기열 상태 HTML 렌더링
-
-                case PROCESSING:
-                    return "redirect:/api/events/" + eventId + "/sections"; // 좌석 선택 섹션으로 이동
-
-                case COMPLETED:
-                    redirectAttributes.addFlashAttribute("infoMessage", "이미 예매를 완료하셨습니다.");
-                    return "redirect:/api/events/" + eventId + "/booking/complete";
-
-                case TIMEOUT:
-                    redirectAttributes.addFlashAttribute("errorMessage", "대기 시간이 초과되었습니다. 다시 시도해주세요.");
-                    return "redirect:/api/events/" + eventId + "/booking/start";
-
-                default:
-                    redirectAttributes.addFlashAttribute("errorMessage", "알 수 없는 오류가 발생했습니다.");
-                    return "redirect:/";
-            }
+            return "/waitingQueue/waitingQueue"; // 대기열 상태 HTML 렌더링
 
         } catch (Exception e) {
-            log.error("예매 시작 중 오류 발생: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "예매 시작 중 오류가 발생했습니다.");
+            log.error("대기열 처리 중 예외 발생: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "대기열 처리 중 오류가 발생했습니다.");
             return "redirect:/";
         }
     }
@@ -203,6 +164,7 @@ public class BookingController {
         // 1. 현재 사용자 확인 (로그인 필요)
         Users user = (Users) session.getAttribute("user");
         if (user == null) {
+            log.warn("⚠️ 세션에 user 없음. 로그인 필요");
             redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요한 서비스입니다.");
             return "redirect:/api/sessions/login";
         }
