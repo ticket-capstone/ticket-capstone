@@ -8,7 +8,7 @@ spring:
       maximum-pool-size: 100
   data:
     redis:
-      host: localhost
+      host: 3.39.226.151
       port: 6379
   jpa:
     hibernate:
