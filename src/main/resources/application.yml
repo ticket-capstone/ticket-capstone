@@ -1,9 +1,11 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/ticketservice?serverTimezone=UTC&characterEncoding=UTF-8
+    url: jdbc:mysql://3.39.226.151:3306/ticketservice?serverTimezone=UTC&characterEncoding=UTF-8
     username: root
     password: 1234
+    hikari:
+      maximum-pool-size: 100
   data:
     redis:
       host: localhost
