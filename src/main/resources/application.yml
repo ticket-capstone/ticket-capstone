@@ -2,7 +2,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://3.39.226.151:3306/ticketservice?serverTimezone=UTC&characterEncoding=UTF-8
-    username: root
+    username: dev
     password: 1234
     hikari:
       maximum-pool-size: 100
